@@ -19,6 +19,7 @@ import DebugLabels from './editor/DebugLabels';
 import FoundObject from './game/FoundObject';
 import Loader from './game/Loader';
 import Video from './game/Video';
+import GameHUD from './game/GameHUD';
 import DebugData from './editor/DebugData';
 
 export default class Game extends FrameListener {
@@ -163,6 +164,7 @@ export default class Game extends FrameListener {
                              scene={this.state.scene}
                              renderer={this.state.renderer}
                              ticker={this.props.ticker}/> : null}
+            <GameHUD />
             <CinemaEffect enabled={this.state.cinema} />
             <TextBox text={this.state.text} />
             <AskChoice ask={this.state.ask} onChoiceChanged={this.onAskChoiceChanged} />
