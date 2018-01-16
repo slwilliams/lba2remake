@@ -4,11 +4,15 @@ import {extend, map} from 'lodash';
 import TextBox from './TextBox';
 
 const styleHUD = {
+    border: '1px outset rgba(44, 74, 95, 0.5)',
+    background: 'rgba(44, 74, 95, 0.5)',
+    borderRadius: 15,
     position: 'absolute',
     top: 15,
     left: 15,
     verticalAlign: 'middle',
-    textAlign: 'center'
+    textAlign: 'center',
+    padding: '5px'
 };
 
 export default class GameHUD extends React.Component {
