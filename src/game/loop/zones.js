@@ -15,7 +15,7 @@ export const ZoneOpcode = [
 ];
 
 export function processZones(game, scene) {
-    const hero = scene.getActor(0);
+    const hero = scene.actors[0];
     const pos = hero.physics.position.clone();
     pos.y += 0.005;
     for (let i = 0; i < scene.zones.length; ++i) {
@@ -24,13 +24,13 @@ export function processZones(game, scene) {
             continue;
 
         const box = zone.props.box;
-        if (pos.x > Math.min(box.bX, box.tX) && pos.x < Math.max(box.bX, box.tX) &&
-            pos.y > Math.min(box.bY, box.tY) && pos.y < Math.max(box.bY, box.tY) &&
-            pos.z > Math.min(box.bZ, box.tZ) && pos.z < Math.max(box.bZ, box.tZ)) {
+        if (pos.x > box.xMin && pos.x < box.xMax &&
+            pos.y > box.yMin && pos.y < box.yMax &&
+            pos.z > box.zMin && pos.z < box.zMax) {
             const zoneType = ZoneOpcode[zone.props.type];
-            if (zoneType != null && zoneType.callback != null) {
-                zoneType.callback(game, scene, zone, hero);
-                break;
+            if (zoneType !== null && zoneType.callback !== null) {
+                if (zoneType.callback(game, scene, zone, hero))
+                    break;
             }
         }
     }
@@ -39,7 +39,7 @@ export function processZones(game, scene) {
 function CUBE(game, scene, zone, hero) {
     if(!(scene.sideScenes && zone.props.snap in scene.sideScenes)) {
         scene.goto(zone.props.snap, (newScene) => {
-            const newHero = newScene.getActor(0);
+            const newHero = newScene.actors[0];
             newHero.physics.position.x = (0x8000 - zone.props.info2 + 511) / 0x4000;
             newHero.physics.position.y = zone.props.info1 / 0x4000;
             newHero.physics.position.z = zone.props.info0 / 0x4000;
@@ -48,14 +48,16 @@ function CUBE(game, scene, zone, hero) {
             newHero.threeObject.quaternion.copy(newHero.physics.orientation);
             newHero.threeObject.position.copy(newHero.physics.position);
         });
+        return true;
     }
+    return false;
 }
 
 function TEXT(game, scene, zone, hero) {
     const voiceSource = game.getAudioManager().getVoiceSource();
     if (game.controlsState.action === 1) {
         if (!scene.zoneState.listener) {
-            scene.getActor(0).props.dirMode = DirMode.NO_MOVE;
+            scene.actors[0].props.dirMode = DirMode.NO_MOVE;
 
             hero.props.prevEntityIndex = hero.props.entityIndex;
             hero.props.prevAnimIndex = hero.props.animIndex;
@@ -77,7 +79,7 @@ function TEXT(game, scene, zone, hero) {
                 if (key === 'Enter' || key === 13) {
                     scene.zoneState.ended = true;
                     game.setUiState({text: null});
-                    scene.getActor(0).props.dirMode = DirMode.MANUAL;
+                    scene.actors[0].props.dirMode = DirMode.MANUAL;
                 }
             };
 

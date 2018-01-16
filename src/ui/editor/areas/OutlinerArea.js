@@ -1,31 +1,17 @@
 import React from 'react';
-import {extend, map, drop} from 'lodash';
-import {makeContentComponent} from './OutlinerArea/content';
+import {map, drop} from 'lodash';
 import {SceneNode} from './OutlinerArea/nodes/scene';
+import {makeOutlinerArea} from "./OutlinerArea/factory";
 import {findScenePath, LocationsNode, LocatorMenu} from './OutlinerArea/nodes/locations/index';
 import DebugData from "../DebugData";
 
-function makeOutlinerArea(id, name, content, extensions = {}) {
-    return {
-        id: id,
-        name: name,
-        menu: extensions.menu,
-        content: makeContentComponent(content, extensions.frame),
-        getInitialState: () => ({
-            path: []
-        }),
-        stateHandler: extend({
-            setPath: function(path) {
-                this.setState({path: path});
-            }
-        }, extensions.stateHandler)
-    };
-}
-
-export const SceneOutliner = makeOutlinerArea('scene_outliner', 'Scene Outliner', SceneNode);
+export const SceneOutliner = makeOutlinerArea('scene_outliner', 'Scene', SceneNode, {
+    icon: 'scene.png'
+});
 
 export const Locator = makeOutlinerArea('locator', 'Locator', LocationsNode, {
     menu: LocatorMenu,
+    icon: 'holomap.png',
     frame: function() {
         const scene = DebugData.scope.scene;
         if (scene !== this.scene) {
@@ -43,6 +29,9 @@ export const Locator = makeOutlinerArea('locator', 'Locator', LocationsNode, {
         setActivePath: function(activePath) {
             this.setState({activePath});
         }
+    },
+    style: {
+        background: '#111111'
     }
 });
 

@@ -34,9 +34,9 @@ export function ZONE_OBJ(actor) {
             continue;
 
         const box = zone.props.box;
-        if (pos.x >= Math.min(box.bX, box.tX) && pos.x < Math.max(box.bX, box.tX) &&
-            pos.y >= Math.min(box.bY, box.tY) && pos.y <= Math.max(box.bY, box.tY) &&
-            pos.z >= Math.min(box.bZ, box.tZ) && pos.z < Math.max(box.bZ, box.tZ)) {
+        if (pos.x >= box.xMin && pos.x < box.xMax &&
+            pos.y >= box.yMin && pos.y <= box.yMax &&
+            pos.z >= box.zMin && pos.z < box.zMax) {
             return zone.props.snap;
         }
     }
@@ -76,7 +76,7 @@ export function CONE_VIEW() {
 }
 
 export function HIT_BY() {
-    return -1;
+    return this.actor.hasCollidedWithActor;
 }
 
 export function ACTION() {
@@ -88,7 +88,7 @@ export function VAR_GAME(index) {
 }
 
 export function LIFE_POINT() {
-    return this.game.getState().hero.life;
+    return LIFE_POINT_OBJ(this.actor);
 }
 
 export function LIFE_POINT_OBJ(actor) {
@@ -140,7 +140,7 @@ export function CARRIED_BY() {
 }
 
 export function CDROM() {
-    return -1;
+    return 1;
 }
 
 export function LADDER() {
@@ -161,7 +161,7 @@ export function BETA() {
 
 export function BETA_OBJ(actor) {
     const angle = actor.physics.temp.angle + Math.PI / 2;
-    return (Math.floor(THREE.Math.radToDeg(angle) / 360 * 0x1000) + 0x1000) % 0x1000;
+    return ((THREE.Math.radToDeg(angle) / 360) * 0x1000) % 0x1000;
 }
 
 export function CARRIED_OBJ_BY() {
@@ -176,8 +176,8 @@ export function DISTANCE_MESSAGE(actor) {
     return DISTANCE.call(this, actor);
 }
 
-export function HIT_OBJ_BY() {
-    return -1;
+export function HIT_OBJ_BY(actor) {
+    return actor.hasCollidedWithActor;
 }
 
 export function REAL_ANGLE() {
@@ -197,7 +197,7 @@ export function COL_DECORS_OBJ() {
 }
 
 export function PROCESSOR() {
-    return -1;
+    return 1; // default cpu 486
 }
 
 export function OBJECT_DISPLAYED() {

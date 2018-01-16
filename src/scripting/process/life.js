@@ -8,7 +8,10 @@ export function PALETTE() {
 }
 
 export function BODY_OBJ(actor, bodyIndex)  {
-    actor.props.bodyIndex = bodyIndex;
+    if (actor.props.bodyIndex !== bodyIndex) {
+        actor.props.bodyIndex = bodyIndex;
+        actor.reload(this.scene);
+    }
 }
 
 export function ANIM_OBJ(actor, animIndex) {
@@ -33,7 +36,7 @@ export function MESSAGE(cmdState, id) {
 
 export function MESSAGE_OBJ(cmdState, actor, id) {
     const voiceSource = this.game.getAudioManager().getVoiceSource();
-    const hero = this.scene.getActor(0);
+    const hero = this.scene.actors[0];
     if (!cmdState.listener) {
         const text = this.scene.data.texts[id];
         if (text.type === 9) {
@@ -117,7 +120,7 @@ export function SET_DIRMODE(dirMode) {
 }
 
 export function SET_DIRMODE_OBJ(index, dirMode) {
-    const actor = this.scene.getActor(index);
+    const actor = this.scene.actors[index];
     if (actor) {
         actor.props.runtimeFlags.dirMode = dirMode;
         if (dirMode === DirMode.MANUAL) {
@@ -305,15 +308,17 @@ export function SET_LIFE_POINT_OBJ(actor, value) {
 }
 
 export function SUB_LIFE_POINT_OBJ() {
-    const actor = this.scene.getActor(index);
+    const actor = this.scene.actors[index];
     actor.props.life -= value;
     if (actor.props.life < 0) {
         actor.props.life = 0;
     }
 }
 
-export function HIT_OBJ() {
-
+export function HIT_OBJ(actor, strength) {
+    // quick and dirty hit object
+    actor.hasCollidedWithActor = this.index;
+    actor.props.life -= strength;
 }
 
 export function PLAY_SMK(cmdState, video) {
@@ -380,7 +385,7 @@ export function ASK_CHOICE(cmdState, index) {
 
 export function ASK_CHOICE_OBJ(cmdState, actor, index) {
     const voiceSource = this.game.getAudioManager().getVoiceSource();
-    const hero = this.scene.getActor(0);
+    const hero = this.scene.actors[0];
     if (!cmdState.listener) {
         const text = this.scene.data.texts[index];
         hero.props.dirMode = DirMode.NO_MOVE;
@@ -463,8 +468,11 @@ export function SET_CHANGE_CUBE() {
 
 }
 
-export function MESSAGE_ZOE() {
-
+export function MESSAGE_ZOE(cmdState, id) {
+    const colorHero = this.actor.props.textColor;
+    this.actor.props.textColor = '#d76763'; // zoe text color
+    MESSAGE_OBJ.call(this, cmdState, this.actor, id);
+    this.actor.props.textColor = colorHero;
 }
 
 export function FULL_POINT() {
@@ -500,8 +508,8 @@ export function IMPACT_POINT() {
 
 }
 
-export function ADD_MESSAGE() {
-
+export function ADD_MESSAGE(cmdState, id) {
+    MESSAGE_OBJ.call(this, cmdState, this.actor, id);
 }
 
 export function BALLOON() {
@@ -556,11 +564,9 @@ export function ESCALATOR() {
 
 export function PLAY_MUSIC(index) {
     const musicSource = this.game.getAudioManager().getMusicSource();
-    if (!musicSource.isPlaying) {
-        musicSource.load(index, () => {
-            musicSource.play();
-        });
-    }
+    musicSource.load(index, () => {
+        musicSource.play();
+    });
 }
 
 export function TRACK_TO_VAR_GAME() {
@@ -604,7 +610,7 @@ export function SET_ARMOR_OBJ() {
 }
 
 export function ADD_LIFE_POINT_OBJ(index, points) {
-    const actor = this.scene.getActor(index);
+    const actor = this.scene.actors[index];
     if (actor) {
         actor.props.life += points;
     }

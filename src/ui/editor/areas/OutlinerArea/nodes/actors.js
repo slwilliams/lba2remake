@@ -5,6 +5,14 @@ import DebugData, {
 } from '../../../DebugData';
 import {map} from 'lodash';
 import {SceneGraphNode} from './sceneGraph';
+import {mapComportementArg} from '../../ScriptEditorArea/listing';
+
+const compStyle = {
+    border: '1px solid black',
+    background: '#20a2ff',
+    color: 'black',
+    padding: '0 2px'
+};
 
 const Actor = {
     dynamic: true,
@@ -32,17 +40,10 @@ const Actor = {
             id: 'comportement',
             value: getComportement(actor),
             render: (value) => {
-                const style = {
-                    border: '1px solid black',
-                    background: '#20a2ff',
-                    color: 'black',
-                    padding: '0 2px'
-                };
                 if (value === 'terminated') {
-                    style.background = '#680000';
-                    return <span style={style}>&nbsp;</span>;
+                    return null;
                 } else {
-                    return <span style={style}>{value}</span>;
+                    return <span style={compStyle}>{mapComportementArg(value)}</span>;
                 }
             }
         },

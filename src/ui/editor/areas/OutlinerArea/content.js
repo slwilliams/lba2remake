@@ -13,7 +13,7 @@ const style = extend({
     fontWeight: 'normal'
 }, fullscreen);
 
-export function makeContentComponent(tree, frame) {
+export function makeContentComponent(tree, frame, ownStyle) {
     return class OutlinerContent extends FrameListener {
         constructor(props) {
             super(props);
@@ -43,7 +43,8 @@ export function makeContentComponent(tree, frame) {
         }
 
         render() {
-            return <div style={style}>
+            const extStyle = extend({}, style, ownStyle);
+            return <div style={extStyle}>
                 {this.renderPath()}
                 {this.renderContent()}
             </div>;
@@ -60,7 +61,8 @@ export function makeContentComponent(tree, frame) {
                              path={this.props.sharedState.path}
                              activePath={this.props.sharedState.activePath}
                              ticker={this.props.ticker}
-                             level={0} />;
+                             level={0}
+                             split={this.props.split} />;
             } else {
                 return 'Node is not available.';
             }

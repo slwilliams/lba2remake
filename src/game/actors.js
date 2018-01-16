@@ -50,7 +50,9 @@ export type Actor = {
     isVisible: boolean,
     isSprite: boolean,
     isKilled: boolean,
-    runScripts: ?Function
+    runScripts: ?Function,
+    loadMesh: Function,
+    reload: Function
 }
 
 export const DirMode = {
@@ -72,21 +74,11 @@ export const DirMode = {
 
 // TODO: move section offset to container THREE.Object3D
 export function loadActor(params: Object, envInfo: any, ambience: any, props: ActorProps, callback: Function) {
-    const pos = props.pos;
     const animState = loadAnimState();
     const actor: Actor = {
         index: props.index,
         props: props,
-        physics: {
-            position: new THREE.Vector3(pos[0], pos[1], pos[2]),
-            orientation: new THREE.Quaternion(),
-            temp: {
-                destination: new THREE.Vector3(0, 0, 0),
-                position: new THREE.Vector3(0, 0, 0),
-                angle: angleToRad(props.angle),
-                destAngle: angleToRad(props.angle),
-            }
-        },
+        physics: initPhysics(props),
         isKilled: false,
         isVisible: props.flags.isVisible && (props.life > 0 || props.bodyIndex >= 0) && props.index !== 1,
         isSprite: props.flags.isSprite,
@@ -96,8 +88,17 @@ export function loadActor(params: Object, envInfo: any, ambience: any, props: Ac
         threeObject: null,
         animState: animState,
         runScripts: null,
+        reset: function() {
+            this.resetAnimState();
+            this.resetPhysics();
+            this.isKilled = false;
+            this.floorSound = -1;
+        },
         resetAnimState: function() {
             resetAnimState(this.animState);
+        },
+        resetPhysics: function() {
+            this.physics = initPhysics(props);
         },
         goto: function(point) {
             this.physics.temp.destination = point;
@@ -116,6 +117,20 @@ export function loadActor(params: Object, envInfo: any, ambience: any, props: Ac
             this.props.runtimeFlags.isTurning = true;
             return this.getDistance(point);
         },
+        facePoint: function(point) {
+            let destAngle = angleTo(this.physics.position, point);
+            const signCurr = this.physics.temp.destAngle > 0 ? 1 : -1;
+            const signTgt = destAngle > 0 ? 1 : -1;
+            if (signCurr !== signTgt && Math.abs(destAngle) > Math.PI / 4) {
+                if (signCurr === -1) {
+                    destAngle -= 2 * Math.PI;
+                } else {
+                    destAngle += 2 * Math.PI;
+                }
+            }
+            this.physics.temp.destAngle = destAngle;
+            this.props.runtimeFlags.isTurning = true;
+        },
         setAngle: function(angle) {
             this.props.runtimeFlags.isTurning = true;
             this.props.angle = angle;
@@ -132,38 +147,71 @@ export function loadActor(params: Object, envInfo: any, ambience: any, props: Ac
             this.props.runtimeFlags.isTurning = false;
             this.physics.temp.destAngle = this.physics.temp.angle;
             delete this.physics.temp.destination;
+        },
+        loadMesh: function(callback: Function) {
+            const that = this;
+            // only if not sprite actor
+            if (!that.isSprite && that.props.bodyIndex !== 0xFF) {
+                loadModel(params, that.props.entityIndex, that.props.bodyIndex, that.props.animIndex, animState, envInfo, ambience, (model) => {
+                    if (model !== null) {
+                        //model.mesh.visible = actor.isVisible;
+                        model.mesh.position.copy(that.physics.position);
+                        model.mesh.quaternion.copy(that.physics.orientation);
+                        that.model = model;
+                        that.threeObject = model.mesh;
+                        if (that.threeObject) {
+                            that.threeObject.name = `actor:${getObjectName('actor', that.props.sceneIndex, that.props.index)}`;
+                            that.threeObject.visible = that.isVisible;
+                        }
+                    }
+                    if (callback) {
+                        callback(null, that);
+                    }
+                });
+            } else {
+                loadSprite(that.props.spriteIndex, (sprite) => {
+                    sprite.threeObject.position.copy(that.physics.position);
+                    //sprite.threeObject.quaternion.copy(actor.physics.orientation);
+                    that.threeObject = sprite.threeObject;
+                    if (that.threeObject) {
+                        that.threeObject.name = `actor:${getObjectName('actor', that.props.sceneIndex, that.props.index)}`;
+                        that.threeObject.visible = that.isVisible;
+                    }
+                    if (callback) {
+                        callback(null, that);
+                    }
+                });
+            }
+        },
+        reload: function(scene) {
+            this.threeObject.visible = false;
+            scene.removeMesh(this.threeObject);
+            if (this.model) {
+                delete this.model;
+            }
+            if (this.threeObject) {
+                delete this.threeObject;
+            }
+            this.loadMesh();
+            scene.addMesh(this.threeObject);
         }
     };
 
     const euler = new THREE.Euler(0, angleToRad(props.angle), 0, 'XZY');
     actor.physics.orientation.setFromEuler(euler);
 
-    // only if not sprite actor
-    if (!actor.isSprite && props.bodyIndex !== 0xFF) {
-        loadModel(params, props.entityIndex, props.bodyIndex, props.animIndex, animState, envInfo, ambience, (model) => {
-            if (model !== null) {
-                //model.mesh.visible = actor.isVisible;
-                model.mesh.position.copy(actor.physics.position);
-                model.mesh.quaternion.copy(actor.physics.orientation);
-                actor.model = model;
-                actor.threeObject = model.mesh;
-                if (actor.threeObject) {
-                    actor.threeObject.name = `actor:${getObjectName('actor', props.sceneIndex, props.index)}`;
-                    actor.threeObject.visible = actor.isVisible;
-                }
-            }
-            callback(null, actor);
-        });
-    } else {
-        loadSprite(props.spriteIndex, (sprite) => {
-            sprite.threeObject.position.copy(actor.physics.position);
-            //sprite.threeObject.quaternion.copy(actor.physics.orientation);
-            actor.threeObject = sprite.threeObject;
-            if (actor.threeObject) {
-                actor.threeObject.name = `actor:${getObjectName('actor', props.sceneIndex, props.index)}`;
-                actor.threeObject.visible = actor.isVisible;
-            }
-            callback(null, actor);
-        });
-    }
+    actor.loadMesh(callback);
+}
+
+function initPhysics({pos, angle}) {
+    return {
+        position: new THREE.Vector3(pos[0], pos[1], pos[2]),
+        orientation: new THREE.Quaternion(),
+        temp: {
+            destination: new THREE.Vector3(0, 0, 0),
+            position: new THREE.Vector3(0, 0, 0),
+            angle: angleToRad(angle),
+            destAngle: angleToRad(angle),
+        }
+    };
 }

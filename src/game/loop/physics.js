@@ -20,7 +20,8 @@ function processActorPhysics(scene, actor, time) {
 
     actor.physics.position.add(actor.physics.temp.position);
     if (actor.props.flags.hasCollisions) {
-        if (!actor.props.runtimeFlags.hasGravityByAnim) {
+        if (!actor.props.runtimeFlags.hasGravityByAnim
+            && actor.props.flags.canFall) {
             actor.physics.position.y -= 0.25 * time.delta;
         }
         scene.scenery.physics.processCollisions(scene, actor);
@@ -35,7 +36,7 @@ function processActorPhysics(scene, actor, time) {
 }
 
 function processTeleports(scene) {
-    const hero = scene.getActor(0);
+    const hero = scene.actors[0];
     const pos = hero.physics.position.clone();
     pos.y += 0.005;
     if (scene.isIsland && (pos.x < 0.01 || pos.z < 0.01 || pos.x > 1.99 || pos.z > 1.99)) {
@@ -50,7 +51,7 @@ function processTeleports(scene) {
         });
         if (sideScene) {
             scene.goto(sideScene.index, (newScene) => {
-                const newHero = newScene.getActor(0);
+                const newHero = newScene.actors[0];
                 newHero.threeObject.quaternion.copy(hero.threeObject.quaternion);
                 newHero.threeObject.position.copy(globalPos);
                 newHero.threeObject.position.sub(newScene.sceneNode.position);

@@ -3,7 +3,8 @@ import {extend} from 'lodash';
 import {editor, fullscreen} from '../styles/index';
 import {Orientation} from './layout';
 import {map, findIndex} from 'lodash';
-import NewArea from './areas/NewArea';
+import NewArea, {NewAreaContent} from './areas/NewArea';
+import AreaLoader from "./areas/AreaLoader";
 
 const menuHeight = 26;
 
@@ -34,18 +35,17 @@ const contentStyle = extend({
     color: 'white'
 }, editor.base);
 
-const iconStyle = (right) => ({
+const iconStyle = (base) => (extend({
     position: 'absolute',
     top: 1,
-    right: right,
     cursor: 'pointer'
-});
+}, base));
 
 export default class Area extends React.Component {
     constructor(props) {
         super(props);
         this.confirmPopup = this.confirmPopup.bind(this);
-        this.state = { confirmPopup: null };
+        this.state = { popup: null };
     }
 
     render() {
@@ -56,7 +56,7 @@ export default class Area extends React.Component {
     }
 
     renderMenu() {
-        const menu = this.props.area.menu && !this.state.confirmPopup
+        const menu = this.props.area.menu && !this.state.popup
             ? React.createElement(this.props.area.menu, {
                 params: this.props.params,
                 ticker: this.props.ticker,
@@ -65,30 +65,51 @@ export default class Area extends React.Component {
                 confirmPopup: this.confirmPopup
             })
             : null;
+        const icon = this.props.area.icon || 'default.png';
         const numIcons = this.props.close ? 3 : 2;
+
+        const onClickIcon = () => {
+            if (this.state.popup) {
+                this.setState({popup: null});
+            } else {
+                this.setState({popup: {
+                    msg: this.renderAreaSelectionPopup()
+                }});
+            }
+        };
+
         return <div style={menuStyle(numIcons)}>
-            {this.renderTitle()}
+            <img onClick={onClickIcon} style={iconStyle({left: 3, top: 3})} src={`editor/icons/areas/${icon}`}/>
 
             <span style={menuContentStyle}>{menu}</span>
-            <img style={iconStyle((numIcons - 1) * 24)} onClick={this.props.split.bind(null, Orientation.HORIZONTAL)} src="editor/icons/split_horizontal.png"/>
-            <img style={iconStyle((numIcons - 2) * 24)} onClick={this.props.split.bind(null, Orientation.VERTICAL)} src="editor/icons/split_vertical.png"/>
-            {this.props.close ? <img style={iconStyle(0)} onClick={this.props.close} src="editor/icons/close.png"/> : null}
+            <img style={iconStyle({right: (numIcons - 1) * 24})} onClick={this.props.split.bind(null, Orientation.HORIZONTAL, null)} src="editor/icons/split_horizontal.png"/>
+            <img style={iconStyle({right: (numIcons - 2) * 24})} onClick={this.props.split.bind(null, Orientation.VERTICAL, null)} src="editor/icons/split_vertical.png"/>
+            {this.props.close ? <img style={iconStyle({right: 0})} onClick={this.props.close} src="editor/icons/close.png"/> : null}
         </div>;
     }
 
-    renderTitle() {
+    renderAreaSelectionPopup() {
+        if (this.props.area === AreaLoader) {
+            return null;
+        }
         const isNew = (this.props.area === NewArea);
-        const onChange = (e) => {
-            const area = this.props.availableAreas[e.target.value];
-            this.props.selectAreaContent(area);
+        const availableAreas = map(this.props.availableAreas);
+        if (!isNew) {
+            const idx = findIndex(availableAreas, area => area.name === this.props.area.name);
+            if (idx === -1) {
+                availableAreas.push(this.props.area);
+            }
+        }
+
+        const selectAreaContent = (area) => {
+            if (area.id !== this.props.area.id) {
+                this.props.selectAreaContent(area);
+            } else {
+                this.setState({popup: null});
+            }
         };
-        const value = isNew ? 'new' : findIndex(this.props.availableAreas, area => area.name === this.props.area.name);
-        return <select onChange={onChange} style={editor.select} value={value}>
-            {<option disabled value="new">Select content</option>}
-            {map(this.props.availableAreas, (area, idx) => {
-                return <option key={idx} value={idx}>{area.name}</option>;
-            })}
-        </select>;
+
+        return <NewAreaContent availableAreas={availableAreas} selectAreaContent={selectAreaContent}/>;
     }
 
     renderContent() {
@@ -99,7 +120,8 @@ export default class Area extends React.Component {
             sharedState: this.props.stateHandler.state,
             availableAreas: this.props.availableAreas,
             selectAreaContent: this.props.selectAreaContent,
-            confirmPopup: this.confirmPopup
+            confirmPopup: this.confirmPopup,
+            split: this.props.split
         };
         if (this.props.mainArea) {
             extend(props, {
@@ -114,28 +136,25 @@ export default class Area extends React.Component {
     }
 
     renderPopup() {
-        const confirmPopup = this.state.confirmPopup;
+        const popup = this.state.popup;
         const ok = () => {
-            confirmPopup.callback();
-            this.setState({confirmPopup: null});
+            popup.callback();
+            this.setState({popup: null});
         };
         const cancel = () => {
-            this.setState({confirmPopup: null});
+            this.setState({popup: null});
         };
-        if (confirmPopup) {
-            const style = extend({
-                background: 'black',
-                padding: 15
-            }, fullscreen, editor.base);
+        if (popup) {
+            const style = extend({}, fullscreen, editor.base, popup.style);
             const buttonStyle = extend({}, editor.button, {
                 fontSize: 16,
                 margin: '0px 4px'
             });
             return <div style={style}>
-                <div>{confirmPopup.msg}</div>
+                <div>{popup.msg}</div>
                 <div style={{float: 'right'}}>
-                    <button style={buttonStyle} onClick={ok}>{confirmPopup.ok}</button>
-                    <button style={buttonStyle} onClick={cancel}>{confirmPopup.cancel}</button>
+                    {popup.ok ? <button style={buttonStyle} onClick={ok}>{popup.ok}</button> : null}
+                    {popup.cancel ? <button style={buttonStyle} onClick={cancel}>{popup.cancel}</button> : null}
                 </div>
             </div>;
         } else {
@@ -145,11 +164,15 @@ export default class Area extends React.Component {
 
     confirmPopup(msg, ok, cancel, callback) {
         this.setState({
-            confirmPopup: {
+            popup: {
                 msg,
                 ok,
                 cancel,
-                callback
+                callback,
+                style: {
+                    background: 'black',
+                    padding: 15
+                }
             }
         });
     }

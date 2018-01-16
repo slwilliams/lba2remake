@@ -47,6 +47,9 @@ function compileInstruction(script, cmd, cmdOffset) {
     instruction.section = cmd.section;
     if (condition)
         instruction.condition = condition;
+    if (cmd.op.skipSideScenes) {
+        instruction.skipSideScenes = true;
+    }
     return instruction;
 }
 
@@ -69,9 +72,9 @@ function compileValue(script, value, cmdOffset) {
             }
             return script.opMap[value.value];
         case 'actor':
-            return script.context.scene.getActor(value.value);
+            return script.context.scene.actors[value.value];
         case 'point':
-            return script.context.scene.getPoint(value.value);
+            return script.context.scene.points[value.value];
         default:
             return value.value;
     }

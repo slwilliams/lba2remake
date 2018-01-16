@@ -19,6 +19,7 @@ import {loadZone} from './zones';
 import {loadScripts, killActor, reviveActor} from '../scripting';
 import {initCameraMovement} from './loop/cameras';
 import {initSceneDebugData, loadSceneMetaData} from '../ui/editor/DebugData';
+import DebugData from '../ui/editor/DebugData';
 
 export function createSceneManager(params, game, renderer, callback: Function) {
     let scene = null;
@@ -51,14 +52,14 @@ export function createSceneManager(params, game, renderer, callback: Function) {
 
             const musicSource = game.getAudioManager().getMusicSource();
             if (scene && scene.sideScenes && index in scene.sideScenes) {
-                killActor(scene.getActor(0));
+                killActor(scene.actors[0]);
                 const sideScene = scene.sideScenes[index];
                 sideScene.sideScenes = scene.sideScenes;
                 delete sideScene.sideScenes[index];
                 delete scene.sideScenes;
                 sideScene.sideScenes[scene.index] = scene;
                 scene = sideScene;
-                reviveActor(scene.getActor(0)); // Awake twinsen
+                reviveActor(scene.actors[0]); // Awake twinsen
                 scene.isActive = true;
                 if (!musicSource.isPlaying) {
                     musicSource.load(scene.data.ambience.musicIndex, () => {
@@ -173,16 +174,24 @@ function loadScene(sceneManager, params, game, renderer, sceneMap, index, parent
                 zones: data.zones,
                 isActive: false,
                 zoneState: { listener: null, ended: false },
-                getActor(index) {
-                    return find(this.actors, function(obj) { return obj.index === index; });
+                goto: sceneManager.goto.bind(sceneManager),
+                reset() {
+                    each(this.actors, actor => {
+                        actor.reset();
+                    });
+                    loadScripts(params, game, scene);
+                    initCameraMovement(game.controlsState, renderer, scene);
+                    if (game.isPaused()) {
+                        DebugData.step = true;
+                    }
+                    scene.variables = createSceneVariables(scene);
                 },
-                getZone(index) {
-                    return find(this.zones, function(obj) { return obj.index === index; });
+                removeMesh(threeObject) {
+                    this.threeScene.remove(threeObject);
                 },
-                getPoint(index) {
-                    return find(this.points, function(obj) { return obj.index === index; });
-                },
-                goto: sceneManager.goto.bind(sceneManager)
+                addMesh(threeObject) {
+                    this.threeScene.add(threeObject);
+                }
             };
             if (scene.isIsland) {
                 scene.section = islandSceneMapping[index].section;
@@ -192,7 +201,7 @@ function loadScene(sceneManager, params, game, renderer, sceneMap, index, parent
             scene.usedVarGames = findUsedVarGames(scene);
             // Kill twinsen if side scene
             if (parent) {
-                killActor(scene.getActor(0));
+                killActor(scene.actors[0]);
             }
             callback(null, scene);
         });

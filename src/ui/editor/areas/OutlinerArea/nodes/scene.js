@@ -5,7 +5,7 @@ import {ZonesNode} from './zones';
 import {PointsNode} from './points';
 import {SceneGraphNode} from './sceneGraph';
 import {size, sortBy, map, each, filter} from 'lodash';
-import {makeVariables, Var} from "./variables";
+import {makeVarDef, makeVariables, Var} from "./variables";
 
 const baseChildren = [
     ActorsNode,
@@ -40,6 +40,13 @@ const VarCube = makeVariables('varcube', 'Local Variables', () => {
         return scene.variables;
     }
     return [];
+}, () => {
+    const scene = DebugData.scope.scene;
+    if (scene) {
+        return {
+            scene: scene.index
+        };
+    }
 });
 
 const VarGameConfig = {
@@ -86,18 +93,10 @@ const VarGame = {
                     : scene.usedVarGames;
                 const varGame = usedVarGames[idx];
                 if (varGame !== undefined) {
-                    return {
-                        type: 'vargame',
-                        value: () => state.flags.quest[varGame],
-                        idx: varGame
-                    };
+                    return makeVarDef('vargame', varGame, () => state.flags.quest, () => null)
                 }
             } else {
-                return {
-                    type: 'vargame',
-                    value: () => state.flags.quest[idx],
-                    idx: idx
-                };
+                return makeVarDef('vargame', idx, () => state.flags.quest, () => null)
             }
         }
     },

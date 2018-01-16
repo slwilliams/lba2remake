@@ -122,20 +122,35 @@ export default class Node extends React.Component {
                 position: 'fixed',
                 left: menu.x - 4,
                 top: menu.y - 4,
-                padding: 4,
+                padding: 0,
                 background: '#cccccc',
                 color: '#000000',
-                border: '2px solid black',
+                border: '1px solid black',
                 borderRadius: 4,
                 cursor: 'pointer',
                 boxShadow: '5px 5px 5px rgba(0, 0, 0, 0.5)'
             };
 
-            const onClick = () => {
+            const menuEntry = {
+                padding: 4,
+                border: '1px solid black',
+            };
+
+            const onClickRename = () => {
                 this.setState({menu: null, renaming: true});
             };
 
-            return <div style={menuStyle} onClick={onClick} onMouseLeave={() => this.setState({menu: null})}>Rename</div>;
+            const onClickOther = (entry) => {
+                entry.onClick(this, this.props.data);
+                this.setState({menu: null});
+            };
+
+            return <div style={menuStyle} onMouseLeave={() => this.setState({menu: null})}>
+                {menu.renaming ? <div style={menuEntry} onClick={onClickRename}>Rename</div> : null}
+                {map(menu.entries, (entry, idx) => {
+                    return <div key={idx} style={menuEntry} onClick={onClickOther.bind(null, entry)}>{entry.name}</div>;
+                })}
+            </div>;
         }
     }
 
@@ -149,17 +164,20 @@ export default class Node extends React.Component {
         const setRoot = this.props.setRoot.bind(null, this.props.path);
         const onClick = node.onClick ? node.onClick.bind(null, this.props.data, setRoot) : setRoot;
 
+        const color = node.color || 'inherit';
+
         const nameStyle = {
             cursor: 'pointer',
             background: selected ? 'white' : 'transparent',
-            color: selected ? 'black' : 'inherit',
+            color: selected ? 'black' : color,
             padding: selected ? '0 2px' : 0
         };
 
         const onContextMenu = (e) => {
             e.preventDefault();
-            if (node.allowRenaming && node.allowRenaming(this.props.data)) {
-                this.setState({menu: {x: e.clientX, y: e.clientY}});
+            const renaming = node.allowRenaming && node.allowRenaming(this.props.data);
+            if (node.ctxMenu || renaming) {
+                this.setState({menu: {x: e.clientX, y: e.clientY, entries: node.ctxMenu, renaming}});
             }
         };
 
@@ -261,7 +279,8 @@ export default class Node extends React.Component {
                      path={path}
                      activePath={this.props.activePath}
                      ticker={this.props.ticker}
-                     level={this.props.level + 1}/>
+                     level={this.props.level + 1}
+                     split={this.props.split} />
     }
 
     numChildren() {
