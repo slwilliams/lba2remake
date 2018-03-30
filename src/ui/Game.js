@@ -276,11 +276,13 @@ export default class Game extends FrameListener {
         return <div style={fullscreen}>
             <div ref={this.onLoad} style={fullscreen}/>
             {this.props.params.editor ?
-                <DebugLabels params={this.props.params}
-                             labels={this.props.sharedState.labels}
-                             scene={this.state.scene}
-                             renderer={this.state.renderer}
-                             ticker={this.props.ticker}/> : null}
+                <DebugLabels
+                    params={this.props.params}
+                    labels={this.props.sharedState.labels}
+                    scene={this.state.scene}
+                    renderer={this.state.renderer}
+                    ticker={this.props.ticker}
+                /> : null}
             <GameHUD />
             <CinemaEffect enabled={this.state.cinema} />
             {!this.state.showMenu ? <TextBox text={this.state.text} /> : null}

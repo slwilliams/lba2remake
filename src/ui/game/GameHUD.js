@@ -56,8 +56,8 @@ const styleHearth = {
 
 function Heart(props) {
     return <div>
-        <img src={'/hud/3_hearth.png'} style={{ width: 18, height: 18}}/>
-        <div style={styleHearth}></div>
+        <img src="/hud/3_hearth.png" style={{ width: 18, height: 18}}/>
+        <div style={styleHearth} />
     </div>;
 }
 
@@ -75,15 +75,15 @@ const styleMagic = {
 
 function Magic(props) {
     return <div>
-        <img src={'/hud/4_magic.png'} style={{ width: 18, height: 18 }}/>
-        <div style={styleMagic}></div>
+        <img src="/hud/4_magic.png" style={{ width: 18, height: 18 }}/>
+        <div style={styleMagic} />
     </div>;
 }
 
 function CloverBox(props) {
     return <div>
-        <img src={'/hud/0_clover_box.png'} style={{ width: 18, height: 18, float: 'left' }}/>
-        <img src={'/hud/0_clover_box.png'} style={{ width: 18, height: 18, float: 'left' }}/>
-        <img src={'/hud/0_clover_box.png'} style={{ width: 18, height: 18, float: 'left' }}/>
+        <img src="/hud/0_clover_box.png" style={{ width: 18, height: 18, float: 'left' }}/>
+        <img src="/hud/0_clover_box.png" style={{ width: 18, height: 18, float: 'left' }}/>
+        <img src="/hud/0_clover_box.png" style={{ width: 18, height: 18, float: 'left' }}/>
     </div>;
 }
