@@ -3,22 +3,28 @@
 import {switchStats} from '../renderer/stats';
 import {BehaviourMode} from '../game/loop/hero';
 
-export function makeKeyboardControls(params: Object, canvas: Object, sceneManager: Object, game: Object) {
+export function makeKeyboardControls(params: Object,
+                                     canvas: Object,
+                                     sceneManager: Object,
+                                     game: Object) {
     const onKeyDown = keyDownHandler.bind(null, params, game, sceneManager);
     const onKeyUp = keyUpHandler.bind(null, game);
+    const onFocusOut = focusOutHandler.bind(null, game);
     canvas.addEventListener('keydown', onKeyDown, true);
     canvas.addEventListener('keyup', onKeyUp, true);
+    canvas.addEventListener('focusout', onFocusOut, true);
     return {
         dispose: () => {
             canvas.removeEventListener('keydown', onKeyDown);
             canvas.removeEventListener('keyup', onKeyUp);
+            canvas.removeEventListener('focusout', onFocusOut);
         }
-    }
+    };
 }
 
 function keyDownHandler(params, game, sceneManager, event) {
     const key = event.code || event.which || event.keyCode;
-    //console.log(event.code, event.which, event.keyCode);
+    // console.log(event.code, event.which, event.keyCode);
     switch (key) {
         case 38: // up
         case 'ArrowUp':
@@ -101,11 +107,15 @@ function keyDownHandler(params, game, sceneManager, event) {
 
         case 34: // pagedown
         case 'PageDown':
-            sceneManager.next();
+            if (params.editor) {
+                sceneManager.next();
+            }
             break;
         case 33: // pageup
         case 'PageUp':
-            sceneManager.previous();
+            if (params.editor) {
+                sceneManager.previous();
+            }
             break;
 
         case 70: // f
@@ -116,16 +126,13 @@ function keyDownHandler(params, game, sceneManager, event) {
         case 'KeyC':
             if (params.editor) {
                 game.controlsState.freeCamera = !game.controlsState.freeCamera;
+                // eslint-disable-next-line no-console
                 console.log('Free camera: ', game.controlsState.freeCamera);
             }
             break;
         case 80: // p
         case 'KeyP':
-            game.pause();
-            break;
-        case 71: // g
-        case 'KeyG':
-            //switchHUD();
+            game.togglePause();
             break;
     }
 }
@@ -197,4 +204,8 @@ function keyUpHandler(game, event) {
                 game.controlsState.cameraSpeed.x = 0;
             break;
     }
+}
+
+function focusOutHandler(game) {
+    game.resetControlsState();
 }

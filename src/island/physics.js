@@ -1,4 +1,4 @@
-import THREE from 'three';
+import * as THREE from 'three';
 import {getTriangleFromPos} from './ground';
 
 export function loadIslandPhysics(sections) {
@@ -6,7 +6,7 @@ export function loadIslandPhysics(sections) {
         processCollisions: processCollisions.bind(null, sections),
         processCameraCollisions: processCameraCollisions.bind(null, sections),
         getGroundInfo: position => getGroundInfo(findSection(sections, position), position)
-    }
+    };
 }
 
 const TGT = new THREE.Vector3();
@@ -20,7 +20,7 @@ function processCameraCollisions(sections, camPosition) {
     const ground = getGround(section, camPosition);
     camPosition.y = Math.max(ground.height + 0.15, camPosition.y);
     if (section) {
-        for (let i = 0; i < section.boundingBoxes.length; ++i) {
+        for (let i = 0; i < section.boundingBoxes.length; i += 1) {
             const bb = section.boundingBoxes[i];
             if (bb.containsPoint(camPosition)) {
                 camPosition.y = bb.max.y + 0.2;
@@ -30,6 +30,10 @@ function processCameraCollisions(sections, camPosition) {
 }
 
 function processCollisions(sections, scene, actor) {
+    if (actor.props.runtimeFlags.hasGravityByAnim) {
+        return;
+    }
+
     POSITION.copy(actor.physics.position);
     POSITION.applyMatrix4(scene.sceneNode.matrixWorld);
 
@@ -72,7 +76,7 @@ function getGround(section, position) {
     if (!section)
         return DEFAULT_GROUND;
 
-    for (let i = 0; i < section.boundingBoxes.length; ++i) {
+    for (let i = 0; i < section.boundingBoxes.length; i += 1) {
         const bb = section.boundingBoxes[i];
         if (position.x >= bb.min.x && position.x <= bb.max.x
             && position.z >= bb.min.z && position.z <= bb.max.z
@@ -106,14 +110,14 @@ function processBoxIntersections(section, actor, position) {
     const boundingBox = actor.model.boundingBox;
     ACTOR_BOX.copy(boundingBox);
     ACTOR_BOX.translate(position);
-    for (let i = 0; i < section.boundingBoxes.length; ++i) {
+    for (let i = 0; i < section.boundingBoxes.length; i += 1) {
         const bb = section.boundingBoxes[i];
         if (ACTOR_BOX.intersectsBox(bb)) {
             INTERSECTION.copy(ACTOR_BOX);
             INTERSECTION.intersect(bb);
-            INTERSECTION.size(ITRS_SIZE);
-            ACTOR_BOX.center(CENTER1);
-            bb.center(CENTER2);
+            INTERSECTION.getSize(ITRS_SIZE);
+            ACTOR_BOX.getCenter(CENTER1);
+            bb.getCenter(CENTER2);
             const dir = CENTER1.sub(CENTER2);
             if (position.y < bb.max.y - 0.015) {
                 if (ITRS_SIZE.x < ITRS_SIZE.z) {

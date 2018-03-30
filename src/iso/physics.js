@@ -1,4 +1,4 @@
-import THREE from 'three';
+import * as THREE from 'three';
 
 export function processCollisions(grid, scene, actor) {
     const basePos = actor.threeObject.position;
@@ -11,7 +11,7 @@ export function processCollisions(grid, scene, actor) {
     if (cell
         && (actor.props.flags.hasCollisionFloor
             || actor.props.flags.canFall)) {
-        for (let i = cell.columns.length - 1; i >= 0; --i) {
+        for (let i = cell.columns.length - 1; i >= 0; i -= 1) {
             const column = cell.columns[i];
             const bb = column.box;
             let y;
@@ -59,20 +59,22 @@ function processBoxIntersections(grid, actor, position, dx, dz) {
     ACTOR_BOX.translate(position);
     DIFF.set(0, 1 / 128, 0);
     ACTOR_BOX.translate(DIFF);
-    for (let ox = -1; ox < 2; ++ox) {
-        for (let oz = -1; oz < 2; ++oz) {
-            if (!(ox == 0 && oz == 0)) {
+    for (let ox = -1; ox < 2; ox += 1) {
+        for (let oz = -1; oz < 2; oz += 1) {
+            if (!(ox === 0 && oz === 0)) {
                 const cell = grid.cells[(dx + ox) * 64 + (dz + oz)];
                 if (cell) {
-                    for (let i = 0; i < cell.columns.length; ++i) {
+                    for (let i = 0; i < cell.columns.length; i += 1) {
                         const column = cell.columns[i];
                         const bb = column.box;
-                        if ((column.shape == 1 || column.shape > 5) && ACTOR_BOX.intersectsBox(bb)) {
+                        if ((column.shape === 1 || column.shape > 5)
+                            && ACTOR_BOX.intersectsBox(bb)
+                        ) {
                             INTERSECTION.copy(ACTOR_BOX);
                             INTERSECTION.intersect(bb);
-                            INTERSECTION.size(ITRS_SIZE);
-                            ACTOR_BOX.center(CENTER1);
-                            bb.center(CENTER2);
+                            INTERSECTION.getSize(ITRS_SIZE);
+                            ACTOR_BOX.getCenter(CENTER1);
+                            bb.getCenter(CENTER2);
                             const dir = CENTER1.sub(CENTER2);
                             if (ITRS_SIZE.x < ITRS_SIZE.z) {
                                 DIFF.set(ITRS_SIZE.x * Math.sign(dir.x), 0, 0);
@@ -85,7 +87,6 @@ function processBoxIntersections(grid, actor, position, dx, dz) {
                         }
                     }
                 }
-
             }
         }
     }

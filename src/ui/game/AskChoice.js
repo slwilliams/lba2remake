@@ -42,20 +42,20 @@ export default class AskChoice extends React.Component {
         const key = event.code || event.which || event.keyCode;
         let selectedIndex = this.state.selectedIndex;
         if (key === 'ArrowUp' || key === 38) {
-            selectedIndex--;
+            selectedIndex -= 1;
             if (selectedIndex < 0) {
                 selectedIndex = this.props.ask.choices.length - 1;
             }
             this.choiceChanged(selectedIndex);
-            this.setState({ selectedIndex: selectedIndex });
+            this.setState({ selectedIndex });
         }
         if (key === 'ArrowDown' || key === 40) {
-            selectedIndex++;
+            selectedIndex += 1;
             if (selectedIndex > this.props.ask.choices.length - 1) {
                 selectedIndex = 0;
             }
             this.choiceChanged(selectedIndex);
-            this.setState({ selectedIndex: selectedIndex });
+            this.setState({ selectedIndex });
         }
     }
 
@@ -71,11 +71,13 @@ export default class AskChoice extends React.Component {
             return <div>
                 <div style={styleChoices}>
                     <ul style={styleChoiceList}>
-                        {map(this.props.ask.choices, (c, idx) => {
-                            return <li key={idx} style={{padding:5}}>
-                                <Choice key={c.value} choice={c} selected={idx === this.state.selectedIndex}/>
-                            </li>
-                        })}
+                        {map(this.props.ask.choices, (c, idx) => <li key={idx} style={{padding: 5}}>
+                            <Choice
+                                key={c.value}
+                                choice={c}
+                                selected={idx === this.state.selectedIndex}
+                            />
+                        </li>)}
                     </ul>
                 </div>
                 <TextBox text={this.props.ask.text}/>
@@ -90,9 +92,9 @@ const styleChoice = {
     fontFamily: 'LBA',
     textShadow: 'black 4px 4px',
     paddingBottom: 5,
-    border: '2px outset #20a2ff',
+    border: '2px outset #61cece',
     borderRadius: 15,
-    fontSize: '3em',
+    fontSize: '2.5em',
     textAlign: 'center',
     width: '100%'
 };
@@ -104,7 +106,7 @@ function Choice(props) {
             background: props.selected ? 'rgba(32, 162, 255, 0.5)' : 'rgba(0, 0, 0, 0.5)'
         };
         const style = extend(extendedStyle, styleChoice);
-        return <div style={style}>{props.choice.text.value}</div>
+        return <div style={style}>{props.choice.text.value}</div>;
     }
     return null;
 }
