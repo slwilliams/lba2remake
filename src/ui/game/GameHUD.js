@@ -1,7 +1,4 @@
 import React from 'react';
-import {extend, map} from 'lodash';
-
-import TextBox from './TextBox';
 
 const styleHUD = {
     border: '1px outset rgba(44, 74, 95, 0.5)',
@@ -25,7 +22,7 @@ export default class GameHUD extends React.Component {
     componentWillMount() {
     }
 
-    componentWillReceiveProps(newProps) {
+    componentWillReceiveProps() {
     }
 
     componentWillUnmount() {
@@ -54,7 +51,7 @@ const styleHearth = {
     verticalAlign: 'middle'
 };
 
-function Heart(props) {
+function Heart() {
     return <div>
         <img src="/hud/3_hearth.png" style={{ width: 18, height: 18}}/>
         <div style={styleHearth} />
@@ -73,14 +70,14 @@ const styleMagic = {
     verticalAlign: 'middle'
 };
 
-function Magic(props) {
+function Magic() {
     return <div>
         <img src="/hud/4_magic.png" style={{ width: 18, height: 18 }}/>
         <div style={styleMagic} />
     </div>;
 }
 
-function CloverBox(props) {
+function CloverBox() {
     return <div>
         <img src="/hud/0_clover_box.png" style={{ width: 18, height: 18, float: 'left' }}/>
         <img src="/hud/0_clover_box.png" style={{ width: 18, height: 18, float: 'left' }}/>
