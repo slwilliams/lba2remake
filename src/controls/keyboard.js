@@ -1,5 +1,6 @@
 // @flow
 
+import keycode from 'keycode';
 import {switchStats} from '../renderer/stats';
 import {BehaviourMode} from '../game/loop/hero';
 
@@ -25,6 +26,7 @@ export function makeKeyboardControls(params: Object,
 function keyDownHandler(params, game, sceneManager, event) {
     const key = event.code || event.which || event.keyCode;
     // console.log(event.code, event.which, event.keyCode);
+    console.log(keycode(event));
     switch (key) {
         case 38: // up
         case 'ArrowUp':
