@@ -34,6 +34,19 @@ function handleBehaviourChanges(hero, behaviour) {
     }
 }
 
+function toggleBonus(hero, value) {
+    hero.props.runtimeFlags.isDoingBonus = value;
+    hero.props.runtimeFlags.hasGravityByAnim = value;
+    /*
+     * hero.props.runtimeFlags.isTurning = ( value === true )
+     * ? false
+     * : hero.props.runtimeFlags.isTurning;
+     */
+    hero.props.runtimeFlags.isWalking = (value === true)
+        ? false
+        : hero.props.runtimeFlags.isWalking;
+}
+
 function toggleJump(hero, value) {
     hero.props.runtimeFlags.isJumping = value;
     hero.props.runtimeFlags.isWalking = value;
@@ -44,13 +57,18 @@ function toggleJump(hero, value) {
 function processActorMovement(controlsState, hero, time, behaviour) {
     let animIndex = hero.props.animIndex;
     if (hero.props.runtimeFlags.isJumping && hero.animState.hasEnded) {
-        toggleJump(hero, false);
+        toggleBonus(hero, false);
     }
-    if (!hero.props.runtimeFlags.isJumping) {
+    if (hero.props.runtimeFlags.isDoingBonus && hero.animState.hasEnded) {
+        toggleBonus(hero, false);
+    }
+    if (!hero.props.runtimeFlags.isJumping &&
+        !hero.props.runtimeFlags.isDoingBonus) {
         toggleJump(hero, false);
         animIndex = 0;
         if (controlsState.heroSpeed !== 0) {
             hero.props.runtimeFlags.isWalking = true;
+            hero.props.runtimeFlags.isDoingBonus = false;
             animIndex = controlsState.heroSpeed === 1 ? 1 : 2;
             if (controlsState.sideStep === 1) {
                 animIndex = controlsState.heroSpeed === 1 ? 42 : 43;
@@ -65,6 +83,7 @@ function processActorMovement(controlsState, hero, time, behaviour) {
         }
         if (controlsState.fight === 1) {
             hero.props.runtimeFlags.isWalking = true;
+            hero.props.runtimeFlags.isDoingBonus = false;
             if (!hero.props.runtimeFlags.isFighting) {
                 animIndex = 17 + Math.floor(Math.random() * 3);
                 hero.props.runtimeFlags.repeatHit = Math.floor(Math.random() * 2);
@@ -98,6 +117,7 @@ function processActorMovement(controlsState, hero, time, behaviour) {
             hero.props.runtimeFlags.isCrouching = true;
         } else if (controlsState.heroSpeed !== 0 || controlsState.heroRotationSpeed !== 0) {
             hero.props.runtimeFlags.isCrouching = false;
+            hero.props.runtimeFlags.isDoingBonus = false;
         }
         if (hero.props.runtimeFlags.isCrouching) {
             animIndex = 16;
@@ -106,7 +126,9 @@ function processActorMovement(controlsState, hero, time, behaviour) {
             animIndex = 15;
         }
     }
-    if (controlsState.heroRotationSpeed !== 0 && !controlsState.crouch) {
+    if (controlsState.heroRotationSpeed !== 0
+        && !controlsState.crouch
+        && !hero.props.runtimeFlags.isDoingBonus) {
         toggleJump(hero, false);
         hero.props.runtimeFlags.isCrouching = false;
         hero.props.runtimeFlags.isWalking = true;

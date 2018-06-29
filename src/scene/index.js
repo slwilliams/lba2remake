@@ -400,6 +400,7 @@ function createRuntimeFlags() {
         isWalking: false,
         isTurning: false,
         isFighting: false,
+        isDoingBonus: false,
         repeatHit: 0,
         isSwitchingHit: false,
         isCrouching: false
