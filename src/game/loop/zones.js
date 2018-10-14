@@ -106,57 +106,77 @@ function TEXT(game, scene, zone, hero) {
 
 function BONUS(game, scene, zone, hero) {
     if (game.controlsState.action === 1) {
-        hero.props.prevEntityIndex = hero.props.entityIndex;
-        hero.props.prevAnimIndex = hero.props.animIndex;
-        hero.props.entityIndex = 0;
+        if (!scene.zoneState.listener) {
+            hero.props.prevEntityIndex = hero.props.entityIndex;
+            hero.props.prevAnimIndex = hero.props.animIndex;
+            hero.props.entityIndex = 0;
 
-        // CHECK Possibly needs to use 'waitPosition' runtime flag
-        hero.props.runtimeFlags.isDoingBonus = true;
+            hero.props.dirMode = DirMode.NO_MOVE;
+            // CHECK Possibly needs to use 'waitPosition' runtime flag
+            hero.props.runtimeFlags.isDoingBonus = true;
 
-        hero.props.animIndex = 11; // Action jump, equivalent to real-index 17
+            hero.props.animIndex = 11; // Action jump, equivalent to real-index 17
 
-        const base2 = (zone.props.info0).toString(2);
-        const binaryTypes = ('000000000').substr(base2.length) + base2;
-        const typesArray = [];
+            scene.zoneState.listener = () => {
+                const base2 = (zone.props.info0).toString(2);
+                const binaryTypes = ('000000000').substr(base2.length) + base2;
+                const typesArray = [];
 
-        /* TODO
-         * Consider an object type or class for bonus items, instead of just scene sprites
-         * It probably needs to have a type of its own in order to be able to move/animate,
-         * and be updated from main loop
-         */
+                /* TODO
+                * Consider an object type or class for bonus items, instead of just scene sprites
+                * It probably needs to have a type of its own in order to be able to move/animate,
+                * and be updated from main loop
+                */
 
-        // Populate array of possible spriteTypes based on the binary value of the info0 prop
-        for (let i = binaryTypes.length; i > 0; i -= 1) {
-            if (parseInt(binaryTypes[binaryTypes.length - i], 10) === 1)
-                typesArray.push(i);
+                // Populate array of possible spriteTypes based
+                // on the binary value of the info0 prop
+                for (let i = binaryTypes.length; i > 0; i -= 1) {
+                    if (parseInt(binaryTypes[binaryTypes.length - i], 10) === 1)
+                        typesArray.push(i);
+                }
+
+                // Pick one of the available spriteTypes
+                // (multiple can be set) at random from the Array
+                let spriteIndex = -2 + typesArray[Math.floor(Math.random() * typesArray.length)];
+
+                /* TODO
+                * Decide which planet you're on, in order to
+                * decide what type of money to spawn. (sprite)
+                * Current sprite value for gold is "3", which is
+                * a pointer according to kazekr website.
+                * Check GIVE_BONUS, GIVE_GOLD_PIECES or similar scripts.
+                */
+
+                switch (spriteIndex) {
+                    case 3:
+                        // In case of gold, pick Kashes for now
+                        spriteIndex += 15;
+                        break;
+                }
+
+                if (zone.props.snap === 0) {
+                    // If it is an Outside scene, use a bilboarded Three.Sprite.
+                    // Otherwise, use a Three.Mesh
+                    loadSprite(spriteIndex, (bonusSprite) => {
+                        bonusSprite.threeObject.position.copy(zone.physics.position);
+                        scene.addMesh(bonusSprite.threeObject);
+                    }, scene.data.isOutsideScene);
+
+                    zone.props.snap = 1;
+                }
+                scene.zoneState.ended = true;
+                hero.props.dirMode = DirMode.MANUAL;
+            };
+
+            setTimeout(scene.zoneState.listener, 500); // denying reentrance
         }
-
-        // Pick one of the available spriteTypes (multiple can be set) at random from the Array
-        let spriteIndex = -2 + typesArray[Math.floor(Math.random() * typesArray.length)];
-
-        /* TODO
-         * Decide which planet you're on, in order to decide what type of money to spawn. (sprite)
-         * Current sprite value for gold is "3", which is a pointer according to kazekr website.
-         * Check GIVE_BONUS, GIVE_GOLD_PIECES or similar scripts.
-        */
-
-        switch (spriteIndex) {
-            case 3:
-                // In case of gold, pick Kashes for now
-                spriteIndex += 15;
-                break;
-        }
-
-        if (zone.props.snap === 0) {
-            // If it is an Outside scene, use a bilboarded Three.Sprite.
-            // Otherwise, use a Three.Mesh
-            loadSprite(spriteIndex, (bonusSprite) => {
-                bonusSprite.threeObject.position.copy(zone.physics.position);
-                scene.addMesh(bonusSprite.threeObject);
-            }, scene.data.isOutsideScene);
-
-            zone.props.snap = 1;
-        }
+    }
+    if (scene.zoneState.ended) {
+        hero.props.entityIndex = hero.props.prevEntityIndex;
+        hero.props.animIndex = hero.props.prevAnimIndex;
+        hero.props.runtimeFlags.isDoingBonus = false;
+        delete scene.zoneState.listener;
+        delete scene.zoneState.ended;
     }
 }
 
