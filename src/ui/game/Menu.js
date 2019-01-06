@@ -1,34 +1,7 @@
 import React from 'react';
-import {extend, map, each, filter} from 'lodash';
+import { map, each, filter } from 'lodash';
 
-import {fullscreen} from '../styles/index';
-
-const styleBgMenu = {
-    backgroundImage: 'url(images/2_screen_menubg_extended.png)',
-    backgroundRepeat: 'repeat-x',
-    height: '100%',
-    backgroundPosition: 'center',
-    backgroundSize: 'cover'
-};
-
-const styleBgInGameMenu = {
-    background: 'rgba(0,0,0,0.5)',
-    height: '100%'
-};
-
-const styleMenu = {
-    position: 'absolute',
-    bottom: '10%',
-    left: '50%',
-    transform: 'translate(-50%, 0)',
-    listStyle: 'none'
-};
-
-const styleMenuList = {
-    listStyle: 'none',
-    padding: 0,
-    margin: 0
-};
+import '../styles/menu.scss';
 
 const menuItems = [
     { item: 'ResumeGame', index: 70, isVisible: false, isEnabled: true, text: null },
@@ -105,14 +78,11 @@ export default class Menu extends React.Component {
 
     render() {
         if (this.props.showMenu) {
-            const styleFull = this.props.inGameMenu ?
-                extend(styleBgInGameMenu, fullscreen)
-                : extend(styleBgMenu, fullscreen);
-            return <div style={styleFull}>
-                <div style={styleMenu}>
-                    <ul style={styleMenuList}>
+            return <div className={`${this.props.inGameMenu ? 'bgInGameMenu' : 'bgMenu'} fullscreen`}>
+                <div className="menu">
+                    <ul className="menuList">
                         {map(this.state.items, (i, idx) =>
-                            ((i.isVisible) ? <li key={idx} style={styleMenuItemList}>
+                            ((i.isVisible) ? <li key={idx} className="menuItemList">
                                 <MenuItem
                                     item={i}
                                     selected={idx === this.state.selectedIndex}
@@ -127,33 +97,13 @@ export default class Menu extends React.Component {
     }
 }
 
-const styleMenuItemList = {
-    padding: 10,
-    width: '700px'
-};
-
-const styleMenuItem = {
-    position: 'relative',
-    fontFamily: 'LBA',
-    textShadow: 'black 4px 4px',
-    paddingBottom: 5,
-    border: '2px outset #61cece',
-    borderRadius: 15,
-    fontSize: '2.5em',
-    textAlign: 'center',
-    width: '100%'
-};
-
 function MenuItem(props) {
     if (props.item.text) {
         const extendedStyle = {
             color: props.item.isEnabled ? 'white' : '#828282',
             background: props.selected ? 'rgba(32, 162, 255, 0.5)' : 'rgba(0, 0, 0, 0.5)',
-            userSelect: 'none',
-            cursor: 'pointer'
         };
-        const style = extend(extendedStyle, styleMenuItem);
-        return <div style={style} onClick={props.onClick}>{props.item.text}</div>;
+        return <div className="menuItem" style={extendedStyle} onClick={props.onClick}>{props.item.text}</div>;
     }
     return null;
 }

@@ -1,31 +1,6 @@
 import React from 'react';
-import {extend} from 'lodash';
 
-const baseStyle = {
-    position: 'absolute',
-    background: 'rgba(0, 0, 0, 0.5)',
-    fontFamily: 'LBA',
-    textShadow: 'black 4px 4px',
-    padding: 20,
-    border: '2px outset #61cece',
-    borderRadius: 15,
-    fontSize: '2.5em'
-};
-
-const styleType = {
-    small: {
-        bottom: 30,
-        left: 30,
-        right: 30,
-        minHeight: 117
-    },
-    big: {
-        bottom: 30,
-        left: 30,
-        right: 30,
-        top: 30
-    }
-};
+import '../styles/textbox.scss';
 
 export default class TextBox extends React.Component {
     constructor(props) {
@@ -53,6 +28,11 @@ export default class TextBox extends React.Component {
                 this.interval = null;
             }
         }
+        if (newProps.skip !== this.props.skip) {
+            this.setState({offset: 0, content: this.props.text.value.replace(/@/g, '\n')});
+            clearInterval(this.interval);
+            this.interval = null;
+        }
     }
 
     componentWillUnmount() {
@@ -78,8 +58,7 @@ export default class TextBox extends React.Component {
     render() {
         const text = this.props.text;
         if (text) {
-            const style = extend({color: text.color}, baseStyle, styleType[text.type]);
-            return <div style={style}>{this.state.content}</div>;
+            return <div className={`textbox ${text.type}`} style={{color: text.color}}>{this.state.content}</div>;
         }
         return null;
     }
