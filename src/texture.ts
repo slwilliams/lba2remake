@@ -54,8 +54,8 @@ export function loadTexture(buffer: ArrayBuffer, palette: Uint8Array) {
         THREE.NearestFilter,
         THREE.NearestMipMapNearestFilter
     );
+    // @ts-ignore
     texture.mipmaps = [{
-        // @ts-ignore
         data: image_data,
         width: 256,
         height: 256
@@ -63,8 +63,8 @@ export function loadTexture(buffer: ArrayBuffer, palette: Uint8Array) {
     for (let level = 1; level <= 8; level += 1) {
         const dim = Math.pow(2, 8 - level);
         image_data = loadMipmapLevelPal(image_data, level, palette);
+        // @ts-ignore
         texture.mipmaps.push({
-            // @ts-ignore
             data: image_data,
             width: dim,
             height: dim

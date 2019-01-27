@@ -2,6 +2,7 @@ import * as THREE from 'three';
 
 function getScreenOrientation() {
     if ('screen' in window && 'orientation' in window.screen) {
+        // @ts-ignore
         return window.screen.orientation.angle;
     }
     return Number(window.orientation) || 0;
