@@ -22,7 +22,8 @@ interface ExtraPhysics {
     temp: {
         position: THREE.Vector3,
         angle: number,
-        destAngle: number
+        destAngle: number,
+        speed: THREE.Vector3,
     };
 }
 
@@ -35,6 +36,8 @@ export interface Extra {
     info: number;
     hitStrength: number;
     time: any;
+    weight: number;
+    speed: number;
 
     isVisible: boolean;
     isSprite: boolean;
@@ -54,6 +57,7 @@ function initPhysics(position, angle) {
             position: new THREE.Vector3(0, 0, 0),
             angle,
             destAngle: angle,
+            speed: new THREE.Vector3(0, 0, 0),
         }
     };
 }
@@ -76,6 +80,8 @@ export async function addExtra(scene, position, angle, spriteIndex, bonus, time)
         info: bonus,
         hitStrength: 0,
         time,
+        weight: 0,
+        speed: 0,
 
         /* @inspector(locate) */
         async loadMesh() {
@@ -90,8 +96,12 @@ export async function addExtra(scene, position, angle, spriteIndex, bonus, time)
 
         init(angle, speed, weight, time) {
             this.flags |= ExtraFlag.FLY;
-            // TODO set speed
+
+            this.physics.temp.angle = angle;
+            this.physics.temp.destAngle = angle;
             this.time = time;
+            this.speed = speed;
+            this.weight = weight;
         },
     };
 
@@ -99,7 +109,7 @@ export async function addExtra(scene, position, angle, spriteIndex, bonus, time)
         extra.flags += ExtraFlag.TIME_OUT + ExtraFlag.FLASH;
     }
 
-    extra.init(angle, 40, 15);
+    extra.init(angle, 40, 15, time);
 
     const euler = new THREE.Euler(0, angle, 0, 'XZY');
     extra.physics.orientation.setFromEuler(euler);
