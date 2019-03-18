@@ -3,6 +3,7 @@ import { loadHqr } from '../hqr.ts';
 import { loadBricks } from './bricks';
 import { loadGrid } from './grid';
 import { processCollisions } from '../game/loop/physicsIso';
+import {compile} from '../utils/shaders';
 import brick_vertex from './shaders/brick.vert.glsl';
 import brick_fragment from './shaders/brick.frag.glsl';
 
@@ -21,7 +22,7 @@ async function loadImageData(src) {
     });
 }
 
-export async function loadIsometricScenery(renderer, entry) {
+export async function loadIsometricScenery(params, renderer, entry) {
     const [ress, bkg, mask] = await Promise.all([
         loadHqr('RESS.HQR'),
         loadHqr('LBA_BKG.HQR'),
@@ -29,7 +30,7 @@ export async function loadIsometricScenery(renderer, entry) {
     ]);
     const palette = new Uint8Array(ress.getEntry(0));
     const bricks = loadBricks(bkg);
-    const grid = loadGrid(bkg, bricks, mask, palette, entry + 1);
+    const grid = loadGrid(params, bkg, bricks, mask, palette, entry + 1);
 
     return {
         props: {
@@ -65,17 +66,17 @@ function loadMesh(renderer, grid, entry) {
     bufferGeometry.addAttribute('position', new THREE.BufferAttribute(new Float32Array(geometries.positions), 3));
     bufferGeometry.addAttribute('uv', new THREE.BufferAttribute(new Float32Array(geometries.uvs), 2));
     const mesh = new THREE.Mesh(bufferGeometry, new THREE.RawShaderMaterial({
-        vertexShader: brick_vertex,
-        fragmentShader: brick_fragment,
+        vertexShader: compile('vert', brick_vertex),
+        fragmentShader: compile('frag', brick_fragment),
         transparent: true,
         uniforms: {
             library: {value: grid.library.texture}
         }
     }));
 
-    const scale = 1 / 32;
+    const scale = 0.75;
     mesh.scale.set(scale, scale, scale);
-    mesh.position.set(2, 0, 0);
+    mesh.position.set(48, 0, 0);
     mesh.quaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), -Math.PI / 2.0);
     mesh.frustumCulled = false;
     mesh.name = `scenery_iso_${entry}`;
