@@ -30,6 +30,7 @@ export function createRenderer(params, canvas, rendererOptions = {}, type = 'unk
 
     if (vrButton) {
         threeRenderer.vr.enabled = true;
+        threeRenderer.vr.multiview = true;
         const renderZone = document.getElementById('renderZone');
         if (renderZone) {
             renderZone.appendChild(vrButton);

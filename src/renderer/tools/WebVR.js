@@ -28,7 +28,8 @@ const WebVR = {
                             attributes: {
                                 highRefreshRate: true,
                                 foveationLevel: 3,
-                                antialias: true
+                                antialias: true,
+                                multiview: true
                             }
                         }
                     ]);
@@ -79,7 +80,8 @@ const WebVR = {
                         attributes: {
                             highRefreshRate: true,
                             foveationLevel: 3,
-                            antialias: true
+                            antialias: true,
+                            multiview: true
                         }
                     }
                 ]);
