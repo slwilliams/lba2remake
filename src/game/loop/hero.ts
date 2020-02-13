@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { DirMode } from '../actors';
+import { DirMode } from '../actors_v1';
 import { AnimType } from '../data/animType';
 import { WORLD_SIZE } from '../../utils/lba';
 

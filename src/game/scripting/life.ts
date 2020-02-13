@@ -1,5 +1,5 @@
 import { clone } from 'lodash';
-import { DirMode } from '../../game/actors';
+import { DirMode } from '../actors_v1';
 import { AnimType } from '../data/animType';
 import { setMagicBallLevel } from '../../game/state';
 import VideoData from '../../video/data';

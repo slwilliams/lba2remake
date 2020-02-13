@@ -282,7 +282,7 @@ export default class GameUI extends FrameListener<GameUIProps, GameUIState> {
 
     pick(event) {
         const scene = this.state.scene;
-        if (this.props.params.editor && scene && this.canvas) {
+        if (this.props.params.editor && scene && scene.version === 1 && this.canvas) {
             const { clientWidth, clientHeight } = this.canvas;
             const mouse = new THREE.Vector2(
                 ((event.clientX / clientWidth) * 2) - 1,
@@ -433,7 +433,9 @@ export default class GameUI extends FrameListener<GameUIProps, GameUIState> {
                     renderer,
                     scene,
                     sceneManager,
-                    hero: scene && scene.actors[0],
+                    hero: scene && scene.version === 1
+                        ? scene.actors[0]
+                        : undefined,
                     controls,
                     ui: omit(
                         this.state,

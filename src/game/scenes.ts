@@ -10,24 +10,23 @@ import { loadIslandScenery, getEnvInfo } from '../island';
 import { loadIsometricScenery } from '../iso';
 import { loadSceneData } from '../scene';
 import { loadSceneMapData } from '../scene/map';
-import { loadActor, DirMode } from './actors';
+import { loadActor, DirMode } from './actors_v1';
 import { loadPoint } from './points';
 import { loadZone } from './zones';
 import { loadScripts } from '../scripting';
 import { killActor, reviveActor } from './scripting';
 import DebugData, * as DBG from '../ui/editor/DebugData';
 import { sBind } from '../utils';
-import { get3DCamera } from '../cameras/3d';
 import { getIsometricCamera } from '../cameras/iso';
 import { getIso3DCamera } from '../cameras/iso3d';
-import { getVR3DCamera } from '../cameras/vr/vr3d';
-import { getVRIsoCamera } from '../cameras/vr/vrIso';
+
 import { createFPSCounter } from '../ui/vr/vrFPS';
 import { createVRGUI } from '../ui/vr/vrGUI';
 import { angleToRad, WORLD_SIZE } from '../utils/lba';
 import { getLanguageConfig } from '../lang';
 import { makePure } from '../utils/debug';
-import { getVrFirstPersonCamera } from '../cameras/vr/vrFirstPerson';
+import { SceneV2 } from './v2/scenes_v2';
+import { loadCamera } from './cameras';
 
 declare global {
     var ga: Function;
@@ -89,26 +88,38 @@ export async function createSceneManager(params, game, renderer, hideMenu: Funct
                 return scene;
             }
             game.loading(index);
-            scene = await loadScene(
-                this,
-                params,
-                game,
-                renderer,
-                sceneMap,
-                index,
-                null
-            );
-            renderer.applySceneryProps(scene.scenery.props);
-            scene.isActive = true;
-            if (!musicSource.isPlaying) {
-                musicSource.load(scene.data.ambience.musicIndex, () => {
-                    // if menu music has started playing during load
-                    menuMusicSource.stop();
-                    musicSource.play();
+            if (index >= 1000) {
+                scene = new SceneV2({
+                    index,
+                    renderer,
+                    game,
+                    params
                 });
+                await scene.load();
+            } else {
+                scene = await loadScene(
+                    this,
+                    params,
+                    game,
+                    renderer,
+                    sceneMap,
+                    index,
+                    null
+                );
             }
-            initSceneDebugData();
-            scene.firstFrame = true;
+            if (scene.version === 1) {
+                renderer.applySceneryProps(scene.scenery.props);
+                scene.isActive = true;
+                if (!musicSource.isPlaying) {
+                    musicSource.load(scene.data.ambience.musicIndex, () => {
+                        // if menu music has started playing during load
+                        menuMusicSource.stop();
+                        musicSource.play();
+                    });
+                }
+                initSceneDebugData();
+                scene.firstFrame = true;
+            }
             game.loaded(wasPaused);
             return scene;
         },
@@ -175,15 +186,6 @@ async function loadScene(sceneManager, params, game, renderer, sceneMap, index, 
         if (indexInfo.isIsland) {
             scenery = await loadIslandScenery(params, islandName, sceneData.ambience);
             threeScene.name = '3D_scene';
-            if (renderer.vr) {
-                if (game.controlsState.firstPerson) {
-                    camera = getVrFirstPersonCamera();
-                } else {
-                    camera = getVR3DCamera();
-                }
-            } else {
-                camera = get3DCamera();
-            }
         } else {
             const useReplacements = renderer.vr || params.iso3d || params.isoCam3d;
             scenery = await loadIsometricScenery(
@@ -192,20 +194,13 @@ async function loadScene(sceneManager, params, game, renderer, sceneMap, index, 
                 useReplacements
             );
             threeScene.name = 'iso_scene';
-            if (renderer.vr) {
-                if (game.controlsState.firstPerson) {
-                    camera = getVrFirstPersonCamera();
-                } else {
-                    camera = getVRIsoCamera();
-                }
-            } else if (params.iso3d || params.isoCam3d) {
-                camera = params.isoCam3d
-                    ? get3DCamera()
-                    : getIso3DCamera();
-            } else {
-                camera = getIsometricCamera();
-            }
         }
+        camera = loadCamera({
+            isIsland: indexInfo.isIsland,
+            vr: renderer.vr,
+            firstPerson: game.controlsState.firstPerson,
+            params
+        });
         if (camera.controlNode) {
             threeScene.add(camera.controlNode);
             if (renderer.vr) {
@@ -235,6 +230,7 @@ async function loadScene(sceneManager, params, game, renderer, sceneMap, index, 
     threeScene.add(sceneNode);
     const scene = {
         index,
+        version: 1,
         data: sceneData,
         isIsland: indexInfo.isIsland,
         camera,

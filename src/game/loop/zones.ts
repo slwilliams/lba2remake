@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { getHtmlColor } from '../../scene';
-import { DirMode } from '../../game/actors';
+import { DirMode } from '../actors_v1';
 import { AnimType } from '../data/animType';
 import { angleTo, angleToRad, getRandom, WORLD_SCALE } from '../../utils/lba';
 import { addExtra, ExtraFlag, randomBonus } from '../extras';

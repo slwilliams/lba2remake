@@ -32,18 +32,7 @@ export function mainGameLoop(params, game, clock, renderer, scene, controls, vrS
                 time.elapsed += 0.05;
                 clock.elapsedTime += 0.05;
             }
-            scene.scenery.update(game, scene, time);
             updateScene(params, game, scene, time);
-            processPhysicsFrame(game, scene, time);
-            each(scene.sideScenes, (sideScene) => {
-                sideScene.firstFrame = scene.firstFrame;
-                updateScene(params, game, sideScene, time);
-                processPhysicsFrame(game, sideScene, time);
-            });
-            if (scene.firstFrame) {
-                scene.camera.init(scene, game.controlsState);
-            }
-            scene.camera.update(scene, game.controlsState, time);
             renderer.render(scene);
             DebugData.step = false;
         } else if (game.controlsState.freeCamera || DebugData.firstFrame) {
@@ -51,15 +40,19 @@ export function mainGameLoop(params, game, clock, renderer, scene, controls, vrS
                 delta: Math.min(dbgClock.getDelta(), 0.05),
                 elapsed: dbgClock.getElapsedTime()
             };
-            if (scene.firstFrame) {
-                scene.camera.init(scene, game.controlsState);
+            if (scene.version === 1) {
+                if (scene.firstFrame) {
+                    scene.camera.init(scene, game.controlsState);
+                }
+                scene.camera.update(scene, game.controlsState, dbgTime);
             }
-            scene.camera.update(scene, game.controlsState, dbgTime);
             renderer.render(scene);
         } else if (renderer.vr) {
             renderer.render(emptyVRScene);
         }
-        scene.firstFrame = false;
+        if (scene.version === 1) {
+            scene.firstFrame = false;
+        }
         delete DebugData.firstFrame;
     } else if (vrScene) {
         renderer.render(vrScene);
@@ -68,6 +61,18 @@ export function mainGameLoop(params, game, clock, renderer, scene, controls, vrS
 }
 
 function updateScene(params, game, scene, time) {
+    if (scene.version === 2) {
+        scene.update(time);
+    } else {
+        updateSceneV1(params, game, scene, time);
+    }
+}
+
+function updateSceneV1(params, game, scene, time) {
+    if (scene.isActive) {
+        scene.scenery.update(game, scene, time);
+    }
+
     // playAmbience(game, scene, time);
     if (scene.firstFrame) {
         scene.sceneNode.updateMatrixWorld();
@@ -101,6 +106,18 @@ function updateScene(params, game, scene, time) {
         if (hero && hero.threeObject) {
             hero.threeObject.visible = false;
         }
+    }
+    processPhysicsFrame(game, scene, time);
+    each(scene.sideScenes, (sideScene) => {
+        sideScene.firstFrame = scene.firstFrame;
+        updateSceneV1(params, game, sideScene, time);
+    });
+
+    if (scene.isActive) {
+        if (scene.firstFrame) {
+            scene.camera.init(scene, game.controlsState);
+        }
+        scene.camera.update(scene, game.controlsState, time);
     }
 }
 

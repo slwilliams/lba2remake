@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import {DirMode} from '../game/actors';
+import {DirMode} from '../game/actors_v1';
 
 import {loadHqr} from '../hqr';
 import {bits} from '../utils';

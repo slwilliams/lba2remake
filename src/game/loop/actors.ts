@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 
-import { Actor} from '../actors';
+import { ActorV1 } from '../actors_v1';
 import { getAnim } from '../../model/entity';
 import { loadAnim } from '../../model/anim';
 import {
@@ -19,7 +19,7 @@ export function updateActor(
     params: any,
     game: any,
     scene: any,
-    actor: Actor,
+    actor: ActorV1,
     time: any
 ) {
     if ((params.mobile || params.clipActors)
@@ -89,7 +89,7 @@ const vrFPsteps = [
     slowMove
 ];
 
-function updateMovements(actor: Actor, firstPerson: boolean, behaviour: number, time: any) {
+function updateMovements(actor: ActorV1, firstPerson: boolean, behaviour: number, time: any) {
     const deltaMS = time.delta * 1000;
     if (actor.props.runtimeFlags.isTurning) {
         const baseAngle = ((actor.physics.temp.destAngle - actor.physics.temp.angle) * deltaMS);
