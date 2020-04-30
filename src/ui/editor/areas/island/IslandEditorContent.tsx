@@ -5,7 +5,6 @@ import Renderer from '../../../../renderer';
 import { fullscreen } from '../../../styles/index';
 import FrameListener from '../../../utils/FrameListener';
 import { loadIslandScenery } from '../../../../island';
-import DebugData from '../../DebugData';
 import {get3DFreeCamera} from './utils/freeCamera';
 import IslandAmbience from './browser/ambience';
 import { TickerProps } from '../../../utils/Ticker';
@@ -15,8 +14,6 @@ import {
 } from '../../../../resources';
 
 interface Props extends TickerProps {
-    mainData: any;
-    saveMainData: Function;
     params: any;
     sharedState: {
         name: string;
@@ -72,28 +69,24 @@ export default class Island extends FrameListener<Props, State> {
         this.zoom = 0;
         this.mouseEnabled = false;
 
-        if (props.mainData) {
-            this.state = props.mainData.state;
-        } else {
-            const camera = get3DFreeCamera();
-            const scene = {
-                camera,
-                threeScene: new THREE.Scene()
-            };
-            scene.threeScene.add(camera.controlNode);
-            const clock = new THREE.Clock(false);
-            this.state = {
-                scene,
-                clock,
-                cameraOrientation: new THREE.Quaternion(),
-                cameraHeadOrientation: new THREE.Quaternion(),
-                cameraSpeed: {
-                    x: 0,
-                    z: 0
-                },
-            };
-            clock.start();
-        }
+        const camera = get3DFreeCamera();
+        const scene = {
+            camera,
+            threeScene: new THREE.Scene()
+        };
+        scene.threeScene.add(camera.controlNode);
+        const clock = new THREE.Clock(false);
+        this.state = {
+            scene,
+            clock,
+            cameraOrientation: new THREE.Quaternion(),
+            cameraHeadOrientation: new THREE.Quaternion(),
+            cameraSpeed: {
+                x: 0,
+                z: 0
+            },
+        };
+        clock.start();
     }
 
     componentWillUnmount() {
@@ -101,15 +94,7 @@ export default class Island extends FrameListener<Props, State> {
         document.removeEventListener('mousemove', this.onMouseMove);
     }
 
-    saveData() {
-        if (this.props.saveMainData) {
-            DebugData.scope = this.state;
-            this.props.saveMainData({
-                state: this.state,
-                canvas: this.canvas
-            });
-        }
-    }
+    saveData() {}
 
     async preload() {
         await registerResources('lba2', 'EN', 'EN');
@@ -119,25 +104,21 @@ export default class Island extends FrameListener<Props, State> {
     async onLoad(root) {
         await this.preload();
         if (!this.root) {
-            if (this.props.mainData) {
-                this.canvas = this.props.mainData.canvas;
-            } else {
-                this.canvas = document.createElement('canvas');
-                this.canvas.tabIndex = 0;
-                const renderer = new Renderer(
-                    this.props.params,
-                    this.canvas,
-                    {},
-                    'islands_editor'
-                );
-                renderer.threeRenderer.setAnimationLoop(() => {
-                    this.props.ticker.frame();
-                });
-                this.setState({ renderer }, this.saveData);
-            }
-            this.root = root;
-            this.root.appendChild(this.canvas);
+            this.canvas = document.createElement('canvas');
+            this.canvas.tabIndex = 0;
+            const renderer = new Renderer(
+                this.props.params,
+                this.canvas,
+                {},
+                'islands_editor'
+            );
+            renderer.threeRenderer.setAnimationLoop(() => {
+                this.props.ticker.frame();
+            });
+            this.setState({ renderer }, this.saveData);
         }
+        this.root = root;
+        this.root.appendChild(this.canvas);
     }
 
     async loadIsland() {

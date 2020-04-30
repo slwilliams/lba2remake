@@ -59,7 +59,6 @@ interface EditorState {
         max: number,
         node: LayoutNode
     };
-    mainData?: any;
 }
 
 export default class Editor extends React.Component<EditorProps, EditorState> {
@@ -69,7 +68,6 @@ export default class Editor extends React.Component<EditorProps, EditorState> {
         this.updateSeparator = this.updateSeparator.bind(this);
         this.enableSeparator = this.enableSeparator.bind(this);
         this.disableSeparator = this.disableSeparator.bind(this);
-        this.saveMainData = this.saveMainData.bind(this);
 
         const layout = loadLayout(this);
 
@@ -245,8 +243,6 @@ export default class Editor extends React.Component<EditorProps, EditorState> {
             ticker={this.props.ticker}
             split={this.split.bind(this, path)}
             close={path.length > 0 && !node.root ? this.close.bind(this, path) : null}
-            saveMainData={this.saveMainData}
-            mainData={this.state.mainData}
             rootStateHandler={root.stateHandler}
             editor={this}
         />;
@@ -330,28 +326,11 @@ export default class Editor extends React.Component<EditorProps, EditorState> {
 
     selectMainAreaContent(area, options = {}) {
         DebugData.scope = {};
-        if (this.state.mainData && this.state.mainData.state) {
-            const {renderer, game} = this.state.mainData.state;
-            if (renderer) {
-                renderer.dispose();
-            }
-            if (game) {
-                const audioMenuManager = game.getAudioMenuManager();
-                audioMenuManager.getMusicSource().stop();
-                const audioManager = game.getAudioManager();
-                audioManager.getMusicSource().stop();
-            }
-        }
         this.setState({
-            mainData: undefined,
             layout: loadLayout(this, area.id, options),
             root: area
         });
         localStorage.setItem('editor_mode', area.id);
-    }
-
-    saveMainData(data) {
-        this.setState({mainData: data});
     }
 
     createNewArea(content) {

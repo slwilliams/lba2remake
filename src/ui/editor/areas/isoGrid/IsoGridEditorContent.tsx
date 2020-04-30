@@ -17,8 +17,6 @@ import {
 } from '../../../../resources';
 
 interface Props extends TickerProps {
-    mainData: any;
-    saveMainData: Function;
     params: any;
     sharedState: {
         isoGridIdx: number;
@@ -106,47 +104,35 @@ export default class IsoGridEditorContent extends FrameListener<Props, State> {
         this.onMouseMove = this.onMouseMove.bind(this);
         this.onWheel = this.onWheel.bind(this);
 
-        if (props.mainData) {
-            this.state = props.mainData.state;
-        } else {
-            const isoCamera = getIsometricCamera();
-            const iso3DCamera = getIso3DCamera();
-            const cameras = [isoCamera, iso3DCamera];
-            const camera = cameras[this.cam];
-            const scene = {
-                camera,
-                threeScene: new THREE.Scene(),
-                target: {
-                    threeObject: new THREE.Object3D()
-                }
-            };
-            const controlsState = {
-                cameraLerp: new THREE.Vector3(),
-                cameraLookAtLerp: new THREE.Vector3()
-            };
-            scene.threeScene.add(isoCamera.threeCamera);
-            scene.threeScene.add(iso3DCamera.controlNode);
-            const clock = new THREE.Clock(false);
-            this.state = {
-                scene,
-                clock,
-                controlsState,
-                isoGridIdx: 0,
-                cameras
-            };
-            clock.start();
-        }
+        const isoCamera = getIsometricCamera();
+        const iso3DCamera = getIso3DCamera();
+        const cameras = [isoCamera, iso3DCamera];
+        const camera = cameras[this.cam];
+        const scene = {
+            camera,
+            threeScene: new THREE.Scene(),
+            target: {
+                threeObject: new THREE.Object3D()
+            }
+        };
+        const controlsState = {
+            cameraLerp: new THREE.Vector3(),
+            cameraLookAtLerp: new THREE.Vector3()
+        };
+        scene.threeScene.add(isoCamera.threeCamera);
+        scene.threeScene.add(iso3DCamera.controlNode);
+        const clock = new THREE.Clock(false);
+        this.state = {
+            scene,
+            clock,
+            controlsState,
+            isoGridIdx: 0,
+            cameras
+        };
+        clock.start();
     }
 
-    saveData() {
-        if (this.props.saveMainData) {
-            DebugData.scope = this.state;
-            this.props.saveMainData({
-                state: this.state,
-                canvas: this.canvas
-            });
-        }
-    }
+    saveData() {}
 
     async preload() {
         await registerResources('lba2', 'EN', 'EN');
@@ -156,22 +142,18 @@ export default class IsoGridEditorContent extends FrameListener<Props, State> {
     async onLoad(root) {
         await this.preload();
         if (!this.root) {
-            if (this.props.mainData) {
-                this.canvas = this.props.mainData.canvas;
-            } else {
-                this.canvas = document.createElement('canvas');
-                this.canvas.tabIndex = 0;
-                const renderer = new Renderer(
-                    this.props.params,
-                    this.canvas,
-                    {},
-                    'iso_grids_editor'
-                );
-                renderer.threeRenderer.setAnimationLoop(() => {
-                    this.props.ticker.frame();
-                });
-                this.setState({ renderer }, this.saveData);
-            }
+            this.canvas = document.createElement('canvas');
+            this.canvas.tabIndex = 0;
+            const renderer = new Renderer(
+                this.props.params,
+                this.canvas,
+                {},
+                'iso_grids_editor'
+            );
+            renderer.threeRenderer.setAnimationLoop(() => {
+                this.props.ticker.frame();
+            });
+            this.setState({ renderer }, this.saveData);
             this.root = root;
             this.root.appendChild(this.canvas);
         }

@@ -33,8 +33,6 @@ import {
 } from '../../../../resources';
 
 interface Props extends TickerProps {
-    mainData: any;
-    saveMainData: Function;
     params: any;
     sharedState: {
         library: number;
@@ -184,57 +182,45 @@ export default class LayoutsEditorContent extends FrameListener<Props, State> {
         this.zoom = 0;
         this.layout = -1;
 
-        if (props.mainData) {
-            this.state = props.mainData.state;
-        } else {
-            const camera = getIsometricCamera();
-            const scene = {
-                camera,
-                threeScene: new THREE.Scene(),
-                target: {
-                    threeObject: new THREE.Object3D()
-                }
-            };
-            const controlsState = {
-                cameraLerp: new THREE.Vector3(),
-                cameraLookAtLerp: new THREE.Vector3()
-            };
-            const gridScale = 0.75;
-            const grid = new THREE.Object3D();
-            for (let x = -4; x <= 4; x += 1) {
-                for (let z = -4; z <= 4; z += 1) {
-                    const tile = new THREE.GridHelper(gridScale, 2);
-                    tile.position.x = x * gridScale;
-                    tile.position.z = z * gridScale;
-                    (tile.material as THREE.LineBasicMaterial).transparent = true;
-                    (tile.material as THREE.LineBasicMaterial).opacity = 1;
-                    grid.add(tile);
-                }
+        const camera = getIsometricCamera();
+        const scene = {
+            camera,
+            threeScene: new THREE.Scene(),
+            target: {
+                threeObject: new THREE.Object3D()
             }
-            scene.threeScene.add(grid);
-            scene.threeScene.add(camera.threeCamera);
-            const clock = new THREE.Clock(false);
-            this.state = {
-                scene,
-                clock,
-                grid,
-                controlsState,
-                showOriginal: false,
-                updateProgress: null
-            };
-            clock.start();
+        };
+        const controlsState = {
+            cameraLerp: new THREE.Vector3(),
+            cameraLookAtLerp: new THREE.Vector3()
+        };
+        const gridScale = 0.75;
+        const grid = new THREE.Object3D();
+        for (let x = -4; x <= 4; x += 1) {
+            for (let z = -4; z <= 4; z += 1) {
+                const tile = new THREE.GridHelper(gridScale, 2);
+                tile.position.x = x * gridScale;
+                tile.position.z = z * gridScale;
+                (tile.material as THREE.LineBasicMaterial).transparent = true;
+                (tile.material as THREE.LineBasicMaterial).opacity = 1;
+                grid.add(tile);
+            }
         }
+        scene.threeScene.add(grid);
+        scene.threeScene.add(camera.threeCamera);
+        const clock = new THREE.Clock(false);
+        this.state = {
+            scene,
+            clock,
+            grid,
+            controlsState,
+            showOriginal: false,
+            updateProgress: null
+        };
+        clock.start();
     }
 
-    saveData() {
-        if (this.props.saveMainData) {
-            DebugData.scope = this.state;
-            this.props.saveMainData({
-                state: this.state,
-                canvas: this.canvas
-            });
-        }
-    }
+    saveData() {}
 
     async preload() {
         await registerResources('lba2', 'EN', 'EN');
@@ -244,25 +230,21 @@ export default class LayoutsEditorContent extends FrameListener<Props, State> {
     async onLoad(root) {
         await this.preload();
         if (!this.root) {
-            if (this.props.mainData) {
-                this.canvas = this.props.mainData.canvas;
-            } else {
-                this.canvas = document.createElement('canvas');
-                this.canvas.tabIndex = 0;
-                const renderer = new Renderer(
-                    this.props.params,
-                    this.canvas,
-                    {},
-                    'layouts_editor'
-                );
-                renderer.threeRenderer.setAnimationLoop(() => {
-                    this.props.ticker.frame();
-                });
-                this.setState({ renderer }, this.saveData);
-            }
-            this.root = root;
-            this.root.appendChild(this.canvas);
+            this.canvas = document.createElement('canvas');
+            this.canvas.tabIndex = 0;
+            const renderer = new Renderer(
+                this.props.params,
+                this.canvas,
+                {},
+                'layouts_editor'
+            );
+            renderer.threeRenderer.setAnimationLoop(() => {
+                this.props.ticker.frame();
+            });
+            this.setState({ renderer }, this.saveData);
         }
+        this.root = root;
+        this.root.appendChild(this.canvas);
     }
 
     componentWillMount() {

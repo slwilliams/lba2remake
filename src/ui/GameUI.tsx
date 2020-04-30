@@ -30,10 +30,6 @@ import { pure } from '../utils/decorators';
 import { getResourcePath, ResourceType } from '../resources';
 
 interface GameUIProps extends TickerProps {
-    saveMainData?: Function;
-    mainData?: {
-        canvas: HTMLCanvasElement;
-    };
     params: any;
     sharedState?: any;
 }
@@ -84,7 +80,6 @@ export default class GameUI extends FrameListener<GameUIProps, GameUIState> {
         this.onRenderZoneRef = this.onRenderZoneRef.bind(this);
         this.onCanvasWrapperRef = this.onCanvasWrapperRef.bind(this);
         this.frame = this.frame.bind(this);
-        this.saveData = this.saveData.bind(this);
         this.onSceneManagerReady = this.onSceneManagerReady.bind(this);
         this.onGameReady = this.onGameReady.bind(this);
         this.onAskChoiceChanged = this.onAskChoiceChanged.bind(this);
@@ -100,42 +95,35 @@ export default class GameUI extends FrameListener<GameUIProps, GameUIState> {
         this.startNewGameScene = this.startNewGameScene.bind(this);
         this.textAnimEndedHandler = this.textAnimEndedHandler.bind(this);
 
-        if (props.mainData) {
-            const state = props.mainData.state;
-            state.game.setUiState = this.setUiState;
-            state.game.getUiState = this.getUiState;
-            this.state = state;
-        } else {
-            const clock = new THREE.Clock(false);
-            const game = createGame(
-                clock,
-                this.setUiState,
-                this.getUiState,
-                props.params,
-            );
+        const clock = new THREE.Clock(false);
+        const game = createGame(
+            clock,
+            this.setUiState,
+            this.getUiState,
+            props.params,
+        );
 
-            this.state = {
-                clock,
-                game,
-                cinema: false,
-                text: null,
-                skip: false,
-                ask: {choices: []},
-                interjections: {},
-                foundObject: null,
-                loading: true,
-                video: null,
-                choice: null,
-                menuTexts: null,
-                showMenu: false,
-                inGameMenu: false,
-                teleportMenu: false,
-                keyHelp: false
-            };
+        this.state = {
+            clock,
+            game,
+            cinema: false,
+            text: null,
+            skip: false,
+            ask: {choices: []},
+            interjections: {},
+            foundObject: null,
+            loading: true,
+            video: null,
+            choice: null,
+            menuTexts: null,
+            showMenu: false,
+            inGameMenu: false,
+            teleportMenu: false,
+            keyHelp: false
+        };
 
-            clock.start();
-            this.preloadPromise = this.preload(game);
-        }
+        clock.start();
+        this.preloadPromise = this.preload(game);
     }
 
     async preload(game) {
@@ -145,21 +133,12 @@ export default class GameUI extends FrameListener<GameUIProps, GameUIState> {
     }
 
     setUiState(state) {
-        this.setState(state, this.saveData);
+        this.setState(state);
     }
 
     @pure()
     getUiState() {
         return this.state;
-    }
-
-    saveData() {
-        if (this.props.saveMainData) {
-            this.props.saveMainData({
-                state: this.state,
-                canvas: this.canvas
-            });
-        }
     }
 
     async onRenderZoneRef(renderZoneElem) {
@@ -173,44 +152,40 @@ export default class GameUI extends FrameListener<GameUIProps, GameUIState> {
                     this.state.sceneManager,
                     this.state.renderer
                 );
-                this.setState({ controls }, this.saveData);
+                this.setState({ controls });
             }
         }
     }
 
     async onCanvasWrapperRef(canvasWrapperElem) {
         if (!this.canvasWrapperElem && canvasWrapperElem) {
-            if (this.props.mainData) {
-                this.canvas = this.props.mainData.canvas;
-            } else {
-                this.canvas = document.createElement('canvas');
-                const game = this.state.game;
-                const renderer = new Renderer(this.props.params, this.canvas, {}, 'game');
-                const sceneManager = await createSceneManager(
+            this.canvas = document.createElement('canvas');
+            const game = this.state.game;
+            const renderer = new Renderer(this.props.params, this.canvas, {}, 'game');
+            const sceneManager = await createSceneManager(
+                this.props.params,
+                game,
+                renderer,
+                this.hideMenu.bind(this)
+            );
+            renderer.threeRenderer.setAnimationLoop(() => {
+                this.props.ticker.frame();
+            });
+            this.onSceneManagerReady(sceneManager);
+            let controls;
+            if (this.renderZoneElem) {
+                controls = createControls(
                     this.props.params,
                     game,
-                    renderer,
-                    this.hideMenu.bind(this)
+                    this.renderZoneElem,
+                    sceneManager,
+                    renderer
                 );
-                renderer.threeRenderer.setAnimationLoop(() => {
-                    this.props.ticker.frame();
-                });
-                this.onSceneManagerReady(sceneManager);
-                let controls;
-                if (this.renderZoneElem) {
-                    controls = createControls(
-                        this.props.params,
-                        game,
-                        this.renderZoneElem,
-                        sceneManager,
-                        renderer
-                    );
-                }
-                this.setState({ renderer, sceneManager, controls }, this.saveData);
             }
-            this.canvasWrapperElem = canvasWrapperElem;
-            this.canvasWrapperElem.appendChild(this.canvas);
+            this.setState({ renderer, sceneManager, controls });
         }
+        this.canvasWrapperElem = canvasWrapperElem;
+        this.canvasWrapperElem.appendChild(this.canvas);
     }
 
     async onSceneManagerReady(sceneManager) {
@@ -252,7 +227,7 @@ export default class GameUI extends FrameListener<GameUIProps, GameUIState> {
         this.state.game.pause();
         const audioMenuManager = this.state.game.getAudioMenuManager();
         audioMenuManager.getMusicSource().loadAndPlay(6);
-        this.setState({showMenu: true, inGameMenu}, this.saveData);
+        this.setState({showMenu: true, inGameMenu});
     }
 
     hideMenu(wasPaused = false) {
@@ -260,16 +235,16 @@ export default class GameUI extends FrameListener<GameUIProps, GameUIState> {
         audioMenuManager.getMusicSource().stop();
         if (!wasPaused)
             this.state.game.resume();
-        this.setState({showMenu: false, inGameMenu: false}, this.saveData);
+        this.setState({showMenu: false, inGameMenu: false});
         this.canvas.focus();
     }
 
     openKeyHelp() {
-        this.setState({keyHelp: true}, this.saveData);
+        this.setState({keyHelp: true});
     }
 
     closeKeyHelp() {
-        this.setState({keyHelp: false}, this.saveData);
+        this.setState({keyHelp: false});
     }
 
     listener(event) {
@@ -358,7 +333,7 @@ export default class GameUI extends FrameListener<GameUIProps, GameUIState> {
             case 71: { // New Game
                 this.hideMenu();
                 const onEnded = () => {
-                    this.setState({video: null}, this.saveData);
+                    this.setState({video: null});
                     this.startNewGameScene();
                     this.state.game.controlsState.skipListener = null;
                 };
@@ -369,7 +344,7 @@ export default class GameUI extends FrameListener<GameUIProps, GameUIState> {
                         path: getResourcePath(ResourceType.VIDEO_INTRO),
                         onEnded
                     }
-                }, this.saveData);
+                });
                 break;
             }
             case -1: { // Teleport
@@ -421,7 +396,7 @@ export default class GameUI extends FrameListener<GameUIProps, GameUIState> {
             this.checkResize();
             const scene = sceneManager.getScene();
             if (this.state.scene !== scene) {
-                this.setState({scene}, this.saveData);
+                this.setState({scene});
             }
             mainGameLoop(
                 this.props.params,
@@ -468,14 +443,14 @@ export default class GameUI extends FrameListener<GameUIProps, GameUIState> {
                 if (this.state.video) {
                     this.setState({
                         video: clone(this.state.video)
-                    }, this.saveData); // Force video rerender
+                    }); // Force video rerender
                 }
             }
         }
     }
 
     onAskChoiceChanged(choice) {
-        this.setState({choice}, this.saveData);
+        this.setState({choice});
     }
 
     textAnimEndedHandler() {

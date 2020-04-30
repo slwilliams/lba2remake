@@ -12,7 +12,6 @@ import {
 } from '../../../../model/animState';
 import { getAnim } from '../../../../model/entity';
 import { loadAnim } from '../../../../model/anim';
-import DebugData from '../../DebugData';
 import fmod from './utils/fmod';
 import {get3DOrbitCamera} from './utils/orbitCamera';
 import { TickerProps } from '../../../utils/Ticker';
@@ -23,8 +22,6 @@ import {
 import { loadEntities } from './browser/entitities';
 
 interface Props extends TickerProps {
-    mainData: any;
-    saveMainData: Function;
     params: any;
     sharedState: {
         entity: number;
@@ -79,46 +76,34 @@ export default class Model extends FrameListener<Props, State> {
 
         this.zoom = 0;
 
-        if (props.mainData) {
-            this.state = props.mainData.state;
-        } else {
-            const camera = get3DOrbitCamera();
-            const scene = {
-                camera,
-                threeScene: new THREE.Scene()
-            };
-            const grid = new THREE.Object3D();
-            for (let x = -4; x <= 4; x += 1) {
-                for (let z = -4; z <= 4; z += 1) {
-                    const tile = new THREE.GridHelper(0.96, 2);
-                    tile.position.x = x * 0.96;
-                    tile.position.z = z * 0.96;
-                    (tile.material as THREE.LineBasicMaterial).transparent = true;
-                    (tile.material as THREE.LineBasicMaterial).opacity = 1;
-                    grid.add(tile);
-                }
+        const camera = get3DOrbitCamera();
+        const scene = {
+            camera,
+            threeScene: new THREE.Scene()
+        };
+        const grid = new THREE.Object3D();
+        for (let x = -4; x <= 4; x += 1) {
+            for (let z = -4; z <= 4; z += 1) {
+                const tile = new THREE.GridHelper(0.96, 2);
+                tile.position.x = x * 0.96;
+                tile.position.z = z * 0.96;
+                (tile.material as THREE.LineBasicMaterial).transparent = true;
+                (tile.material as THREE.LineBasicMaterial).opacity = 1;
+                grid.add(tile);
             }
-            scene.threeScene.add(grid);
-            scene.threeScene.add(camera.controlNode);
-            const clock = new THREE.Clock(false);
-            this.state = {
-                scene,
-                clock,
-                grid
-            };
-            clock.start();
         }
+        scene.threeScene.add(grid);
+        scene.threeScene.add(camera.controlNode);
+        const clock = new THREE.Clock(false);
+        this.state = {
+            scene,
+            clock,
+            grid
+        };
+        clock.start();
     }
 
-    saveData() {
-        if (this.props.saveMainData) {
-            DebugData.scope = this.state;
-            this.props.saveMainData({
-                state: this.state,
-                canvas: this.canvas
-            });
-        }
-    }
+    saveData() {}
 
     async preload() {
         await registerResources('lba2', 'EN', 'EN');
@@ -129,22 +114,18 @@ export default class Model extends FrameListener<Props, State> {
     async onLoad(root) {
         await this.preload();
         if (!this.root) {
-            if (this.props.mainData) {
-                this.canvas = this.props.mainData.canvas;
-            } else {
-                this.canvas = document.createElement('canvas');
-                this.canvas.tabIndex = 0;
-                const renderer = new Renderer(
-                    this.props.params,
-                    this.canvas,
-                    {},
-                    'models_editor'
-                );
-                renderer.threeRenderer.setAnimationLoop(() => {
-                    this.props.ticker.frame();
-                });
-                this.setState({ renderer }, this.saveData);
-            }
+            this.canvas = document.createElement('canvas');
+            this.canvas.tabIndex = 0;
+            const renderer = new Renderer(
+                this.props.params,
+                this.canvas,
+                {},
+                'models_editor'
+            );
+            renderer.threeRenderer.setAnimationLoop(() => {
+                this.props.ticker.frame();
+            });
+            this.setState({ renderer }, this.saveData);
             this.root = root;
             this.root.appendChild(this.canvas);
         }
