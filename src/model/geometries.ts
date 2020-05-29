@@ -28,6 +28,7 @@ interface ModelGeometry {
     uvs?: number[];
     uvGroups?: number[];
     colors: number[];
+    intensities?: number[];
     normals: number[];
     bones: number[];
     linePositions: number[];
@@ -47,6 +48,7 @@ function prepareGeometries(texture, bones, matrixRotation, palette, lutTexture, 
             positions: [],
             normals: [],
             colors: [],
+            intensities: [],
             bones: [],
             linePositions: [],
             lineNormals: [],
@@ -157,6 +159,7 @@ export function loadMesh(
             uvs,
             uvGroups,
             colors,
+            intensities,
             normals,
             bones: boneIndices,
             linePositions,
@@ -191,6 +194,12 @@ export function loadMesh(
                 'color',
                 new THREE.BufferAttribute(new Uint8Array(colors), 1, false)
             );
+            if (intensities) {
+                bufferGeometry.setAttribute(
+                    'intensity',
+                    new THREE.BufferAttribute(new Uint8Array(intensities), 1, false)
+                );
+            }
             bufferGeometry.setAttribute(
                 'boneIndex',
                 new THREE.BufferAttribute(new Uint8Array(boneIndices), 1)
@@ -288,6 +297,7 @@ function loadFaceGeometry(geometries, body) {
                 push.apply(geometries.colored.normals, getNormal(body, vertexIndex));
                 push.apply(geometries.colored.bones, getBone(body, vertexIndex));
                 geometries.colored.colors.push(p.colour);
+                geometries.colored.intensities.push(p.intensity);
             }
         };
         for (let j = 0; j < 3; j += 1) {
@@ -316,6 +326,7 @@ function loadSphereGeometry(geometries, body) {
             push.apply(geometries.colored.normals, normal);
             push.apply(geometries.colored.bones, getBone(body, s.vertex));
             geometries.colored.colors.push(s.colour);
+            geometries.colored.intensities.push(0);
         };
 
         each(sphereGeometry.faces, (f) => {

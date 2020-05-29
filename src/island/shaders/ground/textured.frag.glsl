@@ -23,7 +23,7 @@ out vec4 fragColor;
 void main() {
     float intensity = shadow(lightningIntensity(vIntensity), 0.5);
     vec4 texColor = texture(uTexture, vUv / 255.0);
-    vec4 colWithDither = dither(vColor, intensity);
+    vec4 colWithDither = dither(vColor, 0.0, intensity);
     vec3 texColorLUT = lutLookup(texColor.rgb, intensity);
     vec3 colTexMixed = mix(colWithDither.rgb, texColorLUT.rgb, texColor.a);
     vec3 colWithFog = fog(colTexMixed);

@@ -128,6 +128,9 @@ export default class Model extends FrameListener<Props, State> {
 
     async onLoad(root) {
         await this.preload();
+        if (this.root && !root) {
+            this.root.removeEventListener('wheel', this.onWheel);
+        }
         if (!this.root) {
             if (this.props.mainData) {
                 this.canvas = this.props.mainData.canvas;
@@ -146,6 +149,7 @@ export default class Model extends FrameListener<Props, State> {
                 this.setState({ renderer }, this.saveData);
             }
             this.root = root;
+            this.root.addEventListener('wheel', this.onWheel);
             this.root.appendChild(this.canvas);
         }
     }
@@ -207,6 +211,8 @@ export default class Model extends FrameListener<Props, State> {
     onWheel(e) {
         this.zoom += e.deltaY * 0.01;
         this.zoom = Math.min(Math.max(-1, this.zoom), 8);
+        e.preventDefault();
+        e.stopPropagation();
     }
 
     frame() {

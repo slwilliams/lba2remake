@@ -11,11 +11,13 @@ uniform mat4 rotationMatrix;
 in vec3 position;
 in vec3 normal;
 in float color;
+in float intensity;
 in float boneIndex;
 
 out vec3 vPosition;
 out vec3 vNormal;
 out float vColor;
+out float vIntensity;
 out vec3 vMVPos;
 out float vDistLightning;
 
@@ -34,5 +36,6 @@ void main() {
     vec4 newNormal = rotationMatrix * vec4(n, 1.0);
     vNormal = newNormal.xyz;
     vColor = color;
+    vIntensity = intensity;
     vMVPos = mPos.xyz;
 }

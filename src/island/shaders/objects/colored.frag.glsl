@@ -15,7 +15,7 @@ out vec4 fragColor;
 #require "../common/intensity.frag"
 
 void main() {
-    vec3 colWithDither = dither(vColor, intensity()).rgb;
+    vec3 colWithDither = dither(vColor, 0.0, intensity()).rgb;
     vec3 colWithFog = fog(colWithDither);
     vec3 colWithLightning = lightning(colWithFog);
     fragColor = vec4(colWithLightning, 1.0);

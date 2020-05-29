@@ -42,7 +42,7 @@ export function loadBody(model, bodies, index, bodyProps) {
     loadBones(obj);
     loadVertices(obj);
     loadNormals(obj);
-    loadPolygons(obj, index);
+    loadPolygons(obj);
     loadLines(obj);
     loadSpheres(obj);
     loadUVGroups(obj);
@@ -98,7 +98,7 @@ function loadNormals(object) {
     }
 }
 
-function loadPolygons(object, bodyIndex) {
+function loadPolygons(object) {
     object.polygons = [];
     const data = new DataView(
         object.buffer,
@@ -119,14 +119,14 @@ function loadPolygons(object, bodyIndex) {
         const blockSize = ((sectionSize - 8) / numPolygons);
 
         for (let j = 0; j < numPolygons; j += 1) {
-            const poly = loadPolygon(data, offset, renderType, blockSize, bodyIndex);
+            const poly = loadPolygon(data, offset, renderType, blockSize);
             object.polygons.push(poly);
             offset += blockSize;
         }
     }
 }
 
-function loadPolygon(data, offset, renderType, blockSize, bodyIndex) {
+function loadPolygon(data, offset, renderType, blockSize) {
     const numVertex = (renderType & 0x8000) ? 4 : 3;
     const hasExtra = !!((renderType & 0x4000));
     const hasTex = !!((renderType & 0x8 && blockSize > 16));
@@ -168,14 +168,8 @@ function loadPolygon(data, offset, renderType, blockSize, bodyIndex) {
     const colour = data.getUint8(offset + 8, true);
     poly.colour = Math.floor(colour / 16);
 
-    // dirty fix for Zoe's mustache
-    if (bodyIndex === 26 && poly.colour === 1) {
-        poly.colour = 2;
-    }
-
     // polygon color intensity
-    const intensity = data.getInt16(offset + 10, true);
-    poly.intensity = intensity;
+    poly.intensity = colour % 16;
 
     if (hasTex) {
         for (let k = 0; k < numVertex; k += 1) {

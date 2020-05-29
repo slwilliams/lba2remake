@@ -20,7 +20,7 @@ out vec4 fragColor;
 void main() {
     float intensity = lightningIntensity(vIntensity);
     float intensWithShadow = shadow(intensity, 0.5);
-    vec3 colWithDithering = dither(vColor, intensWithShadow).rgb;
+    vec3 colWithDithering = dither(vColor, 0.0, intensWithShadow).rgb;
     vec3 colWithFog = fog(colWithDithering);
     vec3 colWithLightning = lightning(colWithFog);
     fragColor = vec4(colWithLightning, 1.0);
