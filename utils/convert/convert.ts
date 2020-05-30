@@ -98,9 +98,19 @@ const musicConvertor = async () => {
     const bitrate = readBitrateArguments();
     for (let i = 0; i < size; i += 1) {
         const file = filesToConvert[i];
-        const inputFile = `${folderPath}${file}`;
+        let inputFile = `${folderPath}${file}`;
         const outputFileName = getOutputMusicFileName(file);
         const outputFilePath = `${folderPath}${outputFileName}`;
+        if (file.toLowerCase().endsWith("ogg")) {
+            // For some reason using FFMPEG to directly convert from ogg to aac
+            // causes the web audio API implementation in Chrome to stutter
+            // when playing back the audio. To get around this, first convert
+            // the ogg to a wav, and then run the usual m4a conversion on that
+            // resulting wav file...
+            const wavOutputFile = outputFileName.replace("m4a", "wav");
+            await convertToWavAudio(inputFile, wavOutputFile);
+            inputFile = wavOutputFile;
+        }
         await convertToM4aAudio(inputFile, outputFilePath, bitrate);
     }
 };
@@ -194,6 +204,12 @@ const convertToM4aAudio = async (inputFilePath: string, outputFilePath: string, 
     console.log(`Converting ${inputFilePath} to ${outputFilePath} with bitrate ${bitrate}k`);
     removeFile(outputFilePath);
     FFmpeg.runSync(`-i "${inputFilePath}" -c:a aac -b:a ${bitrate}k "${outputFilePath}"`);
+};
+
+const convertToWavAudio = async (inputFilePath: string, outputFilePath: string) => {
+    console.log(`Converting ${inputFilePath} to ${outputFilePath}`);
+    removeFile(outputFilePath);
+    FFmpeg.runSync(`-i "${inputFilePath}" "${outputFilePath}"`);
 };
 
 const convertors = {
