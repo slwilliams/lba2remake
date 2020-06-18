@@ -10,6 +10,7 @@ import { extractGridMetadata } from './metadata';
 import { Side, OffsetBySide } from './mapping';
 import { WORLD_SCALE_B, WORLD_SIZE } from '../utils/lba';
 import { loadResource, ResourceType } from '../resources';
+ import {createBoundingBox} from '../utils/rendering';
 
 export async function loadImageData(src) : Promise<ImageData> {
     return new Promise((resolve) => {
@@ -68,6 +69,14 @@ async function loadMesh(grid, entry, ambience, is3D) {
     const gridMetadata = await extractGridMetadata(grid, entry, ambience, is3D);
     if (gridMetadata.replacements.threeObject) {
         threeObject.add(gridMetadata.replacements.threeObject);
+    }
+    for (const c of cells) {
+        for (const col of c.columns) {
+            if (col && col.box) {
+                threeObject.add(createBoundingBox(col.box, new THREE.Vector3(Math.random(), Math.random(), Math.random())));
+            }
+        }      
+        
     }
 
     for (let z = 0; z < 64; z += 1) {

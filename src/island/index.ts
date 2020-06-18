@@ -136,7 +136,7 @@ async function loadIslandNode(params, props, files, lutTexture, ambience) {
     if (params.editor) {
         boundingBoxes = new THREE.Object3D();
         boundingBoxes.name = 'BoundingBoxes';
-        boundingBoxes.visible = false;
+        boundingBoxes.visible = true;
         boundingBoxes.matrixAutoUpdate = false;
         islandObject.add(boundingBoxes);
     }
@@ -147,7 +147,7 @@ async function loadIslandNode(params, props, files, lutTexture, ambience) {
         sections[`${section.x},${section.z}`] = section;
         if (params.editor) {
             each(section.boundingBoxes, (bb, idx) => {
-                const box = createBoundingBox(bb, new THREE.Vector3(0.9, 0.9, 0.9));
+                const box = createBoundingBox(bb, new THREE.Vector3(Math.random(), Math.random(), Math.random()));
                 box.name = `[${section.x},${section.z}]:${idx}`;
                 boundingBoxes.add(box);
             });

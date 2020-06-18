@@ -3,6 +3,25 @@ import {map, last} from 'lodash';
 import {bits} from '../utils';
 import {loadBricksMapping} from './mapping';
 
+export enum GROUND_TYPES {
+    NORMAL_FLOOR,
+    WATER,
+    UNUSED,
+    ESCALATOR_BOTTOM_RIGHT_TOP_LEFT,
+    ESCALATOR_TOP_LEFT_BOTTOM_RIGHT,
+    ESCALATOR_BOTTOM_LEFT_TOP_RIGHT,
+    ESCALATOR_TOP_RIGHT_BOTTOM_LEFT,
+    DOME_OF_THE_SLATE_FLOOR,
+    CAVE_SPIKES,
+    LAVA,
+    NORMAL_FLOOR2,
+    GAS,
+    UNUSED2,
+    LAVA2,
+    GAS2,
+    WATER2,
+};
+
 export async function loadGrid(bkg, bricks, mask, palette, entry) {
     const gridData = new DataView(bkg.getEntry(entry));
     const libIndex = gridData.getUint8(0);
@@ -13,19 +32,18 @@ export async function loadGrid(bkg, bricks, mask, palette, entry) {
     }
     const library = loadLibrary(bkg, bricks, mask, palette, libIndex);
     const gridMetadata = await getGridMetadata(entry);
-    return {
-        library,
-        cells: map(offsets, (offset, idx) => {
+     const cells = map(offsets, (offset, idx) => {
             const blocks = [];
             const numColumns = gridData.getUint8(offset);
             offset += 1;
             const columns = [];
             let baseHeight = 0;
+           
             for (let i = 0; i < numColumns; i += 1) {
                 const flags = gridData.getUint8(offset);
                 offset += 1;
                 const type = bits(flags, 6, 2);
-                const height = bits(flags, 0, 5) + 1;
+                let height = bits(flags, 0, 5) + 1;
 
                 const block = type === 2 ? {
                     layout: gridData.getUint8(offset) - 1,
@@ -95,16 +113,21 @@ export async function loadGrid(bkg, bricks, mask, palette, entry) {
                                 (z + 1) / 32
                             )
                         ),
+                        groundType: (blockData && blockData.groundType),
                         sound: (blockData && blockData.sound) || -1
                     });
                 }
                 baseHeight += height;
             }
+            
             return {
                 blocks,
                 columns
             };
-        })
+        });
+    return {
+        library,
+        cells: cells,
     };
 }
 
@@ -167,12 +190,13 @@ function loadLayout(dataView, index) {
     const offset = 3;
     for (let i = 0; i < numBricks; i += 1) {
         const type = dataView.getUint8(offset + (i * 4) + 1);
-        blocks.push({
+        const b = {
             shape: dataView.getUint8(offset + (i * 4)),
             sound: bits(type, 0, 4),
             groundType: bits(type, 4, 4),
             brick: dataView.getUint16(offset + (i * 4) + 2, true)
-        });
+        };        
+        blocks.push(b);        
     }
     return {
         index,

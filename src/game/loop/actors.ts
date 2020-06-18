@@ -146,7 +146,7 @@ function updateModel(game: any,
         const anim = loadAnim(model, model.anims, realAnimIdx);
         animState.loopFrame = anim.loopFrame;
         if (animState.prevRealAnimIdx !== -1 && realAnimIdx !== animState.prevRealAnimIdx) {
-            updateKeyframeInterpolation(anim, animState, time, realAnimIdx);
+           updateKeyframeInterpolation(anim, animState, time, realAnimIdx);
         }
         if (realAnimIdx === animState.realAnimIdx || animState.realAnimIdx === -1) {
             updateKeyframe(anim, animState, time, realAnimIdx);

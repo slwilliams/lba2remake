@@ -23,9 +23,11 @@ function processActorPhysics(scene, actor, time) {
         if (!actor.props.runtimeFlags.hasGravityByAnim
             && actor.props.flags.canFall) {
             // Max falling speed: 0.15m per frame
-            actor.physics.position.y -= 0.25 * WORLD_SIZE * time.delta;
+            if (!actor.props.runtimeFlags.isClimbing) {
+                actor.physics.position.y -= 0.25 * WORLD_SIZE * time.delta;
+            }
         }
-        scene.scenery.physics.processCollisions(scene, actor);
+        scene.scenery.physics.processCollisions(scene, actor, time);
         processCollisionsWithActors(scene, actor);
     }
     actor.model.mesh.quaternion.copy(actor.physics.orientation);

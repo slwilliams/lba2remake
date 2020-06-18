@@ -273,7 +273,7 @@ function mapFirstPersonMovements(
         if ('xr-standard-thumbstick' in components) {
             fpMove = {
                 btn: 'xr-standard-thumbstick',
-                handler: component => -component.values.yAxis
+                handler: component => component.values.yAxis
             };
         } else if ('xr-standard-touchpad' in components) {
             fpMove = {

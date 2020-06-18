@@ -48,6 +48,7 @@ export default class Root extends React.Component<RootProps> {
         window.addEventListener('hashchange', this.onHashChange);
         document.addEventListener('displaychangelog', this.openChangeLog);
 
+
         // If WebXR is not supported, try loading the Polyfill.
         if (!('xr' in navigator)) {
           // Don't support mobile devices without controllers i.e. cardboard.

@@ -370,7 +370,6 @@ function loadPatches(scene, offset) {
         offset += 4;
         scene.patches.push(unk);
     }
-
     return offset;
 }
 
@@ -436,7 +435,8 @@ function createRuntimeFlags() {
         isFighting: false,
         repeatHit: 0,
         isSwitchingHit: false,
-        isCrouching: false
+        isCrouching: false,
+        isClimbing: false,
     };
 }
 

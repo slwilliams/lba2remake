@@ -14,11 +14,92 @@ export const ZoneOpcode = [
     { opcode: 3, command: 'FRAGMENT', handler: NOP },
     { opcode: 4, command: 'BONUS', handler: BONUS },
     { opcode: 5, command: 'TEXT', handler: TEXT },
-    { opcode: 6, command: 'LADDER', handler: NOP },
+    { opcode: 6, command: 'LADDER', handler: LADDER },
     { opcode: 7, command: 'CONVEYOR', handler: NOP },
     { opcode: 8, command: 'SPIKE', handler: NOP },
     { opcode: 9, command: 'RAIL', handler: NOP }
 ];
+
+export function processZones(game, scene) {
+    const hero = scene.actors[0];
+    const pos = hero.physics.position.clone();
+    pos.y += 0.005;
+    for (let i = 0; i < scene.zones.length; i += 1) {
+        const zone = scene.zones[i];
+        if (zone.props.type === 2)
+            continue;
+
+        const box = zone.props.box;
+        if (pos.x >= box.xMin && pos.x < box.xMax &&
+            pos.y >= box.yMin && pos.y < box.yMax &&
+            pos.z >= box.zMin && pos.z < box.zMax) {
+            const zoneType = ZoneOpcode[zone.props.type];
+            if (zoneType !== null && zoneType.handler !== null) {
+                if (zoneType.handler(game, scene, zone, hero))
+                    break;
+            }
+        }
+    }
+}
+
+const LADDER_CLIMB_SPEED = 0.022;
+const LADDER_TOP_OUT_DELTA = 1.1;
+let firstTime = true;
+function LADDER(game, scene, zone, hero) {
+    if (hero.props.runtimeFlags.isToppingOutUp) {
+        return false;
+    }
+    let colPos = new THREE.Vector3();
+    colPos.copy(hero.physics.position);
+
+    hero.physics.position.x += Math.sin(hero.physics.temp.angle) * 0.1;
+    hero.physics.position.z += Math.cos(hero.physics.temp.angle) * 0.1;
+    scene.scenery.physics.processCollisions(scene, hero, null);
+    hero.physics.position = colPos;
+
+    console.log(scene);
+    if (!hero.props.runtimeFlags.collision) {
+        return false;
+    }
+
+    let facing = true;
+    if ((hero.physics.temp.angle < 0.65*Math.PI && hero.physics.temp.angle > 0.35*Math.PI) ||
+        (hero.physics.temp.angle > 0.75*Math.PI || hero.physics.temp.angle < -0.9*Math.PI)) {
+        facing = true;
+    }
+
+    if (scene.isIsland) {
+        facing = true;
+    }
+
+    if (zone.props.info1 && facing) {
+        // Is UP being pressed?
+        if (game.controlsState.controlVector.y == 1) {
+            if (!hero.props.runtimeFlags.isClimbing) {
+                hero.props.runtimeFlags.isClimbing = true;
+                firstTime = true;
+            }
+           
+            hero.setAnim(30);
+
+            if (firstTime && hero.animState.currentFrame == 0) {
+                return false;
+            }
+            firstTime = false;
+            hero.physics.position.y += LADDER_CLIMB_SPEED;
+            if (zone.props.box.yMax - hero.physics.position.y <= LADDER_TOP_OUT_DELTA) {
+                hero.props.runtimeFlags.isToppingOutUp = true;    
+                hero.setAnim(13);
+                hero.animState.noInterpolate = true;
+                return false;
+            }
+
+        } else {
+            hero.props.runtimeFlags.isClimbing = false;
+        }
+    }
+    return false;
+}
 
 // Readable Scene IDs. Only those transitions we need zone offsets for are
 // listed.
@@ -49,28 +130,6 @@ const ZONE_OFFSET_OVERRIDES = {
         FRANCO_ROGER_HOUSE: -1.25,
     }
 };
-
-export function processZones(game, scene) {
-    const hero = scene.actors[0];
-    const pos = hero.physics.position.clone();
-    pos.y += 0.005;
-    for (let i = 0; i < scene.zones.length; i += 1) {
-        const zone = scene.zones[i];
-        if (zone.props.type === 2)
-            continue;
-
-        const box = zone.props.box;
-        if (pos.x > box.xMin && pos.x < box.xMax &&
-            pos.y > box.yMin && pos.y < box.yMax &&
-            pos.z > box.zMin && pos.z < box.zMax) {
-            const zoneType = ZoneOpcode[zone.props.type];
-            if (zoneType !== null && zoneType.handler !== null) {
-                if (zoneType.handler(game, scene, zone, hero))
-                    break;
-            }
-        }
-    }
-}
 
 // This is used to show a visual indicator of the target
 // position to which the hero teleports after changing scene
