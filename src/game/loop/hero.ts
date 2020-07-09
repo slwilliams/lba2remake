@@ -25,7 +25,7 @@ export function updateHero(game, scene, hero, time) {
         return;
 
     const behaviour = game.getState().hero.behaviour;
-    handleBehaviourChanges(hero, behaviour);
+    handleBehaviourChanges(scene, hero, behaviour);
     if (game.controlsState.firstPerson) {
         processFirstPersonsMovement(game, scene, hero);
     } else {
@@ -37,9 +37,11 @@ export function updateHero(game, scene, hero, time) {
     }
 }
 
-function handleBehaviourChanges(hero, behaviour) {
+function handleBehaviourChanges(scene, hero, behaviour) {
     if (hero.props.entityIndex !== behaviour) {
         hero.props.entityIndex = behaviour;
+        hero.props.bodyIndex = 1;
+        hero.reloadModel(scene);
         toggleJump(hero, false);
         // TODO(scottwilliams): this nulls any existing callbacks, meaning e.g.
         // we don't reset falling flag etc. work out what to do here.
@@ -212,7 +214,8 @@ function processActorMovement(game, scene, hero, time, behaviour) {
         if (scene.isIsland) {
             distFromFloor = scene.scenery.physics.getDistFromFloor(scene, hero);
         }
-        if (distFromFloor >= SMALL_FALL_HEIGHT) {
+        const isUsingProtopack = (hero.props.entityIndex === BehaviourMode.PROTOPACK || hero.props.entityIndex === BehaviourMode.JETPACK) && hero.props.animIndex === AnimType.FORWARD; 
+        if (distFromFloor >= SMALL_FALL_HEIGHT && !isUsingProtopack) {
             hero.props.runtimeFlags.isFalling = true;
             hero.props.fallDistance = distFromFloor;
             hero.setAnim(AnimType.FALLING);

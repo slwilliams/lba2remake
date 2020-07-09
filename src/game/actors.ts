@@ -207,6 +207,12 @@ export async function loadActor(
         },
 
         async loadMesh() {
+            //console.log(this);
+            if (!this.isVisible) {
+                return;
+            }
+           // console.log(animState);
+
             const name = getObjectName('actor',
                             this.props.sceneIndex,
                             this.props.index);
@@ -218,7 +224,7 @@ export async function loadActor(
                     entityIndex,
                     bodyIndex,
                     animIndex,
-                    animState,
+                    this.animState,
                     envInfo,
                     ambience
                 );
@@ -292,11 +298,12 @@ export async function loadActor(
         reloadModel(scene) {
             const oldObject = this.threeObject;
             this.loadMesh().then(() => {
+                scene.addMesh(this.threeObject);
                 if (oldObject) {
                     scene.removeMesh(oldObject);
                 }
                 this.threeObject.updateMatrixWorld();
-                scene.addMesh(this.threeObject);
+                
             });
         }
     };

@@ -332,6 +332,9 @@ export default class GameUI extends FrameListener<GameUIProps, GameUIState> {
             }
 
             const foundActor = scene.actors.find((actor) => {
+                if (!actor.threeObject) {
+                    return false;
+                }
                 if (actor.threeObject.visible && actor.model) {
                     const bb = actor.model.boundingBox.clone();
                     bb.applyMatrix4(actor.threeObject.matrixWorld);

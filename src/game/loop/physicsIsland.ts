@@ -1,6 +1,8 @@
 import * as THREE from 'three';
 import {getTriangleFromPos} from '../../island/ground';
 import { WORLD_SIZE } from '../../utils/lba';
+import { BehaviourMode } from './hero';
+import { AnimType } from '../data/animType';
 
 export function loadIslandPhysics(sections) {
     return {
@@ -49,6 +51,15 @@ function getDistFromFloor(sections, scene, obj) {
     const originalPos = new THREE.Vector3();
     originalPos.copy(obj.physics.position);
     originalPos.applyMatrix4(scene.sceneNode.matrixWorld);
+    const f = (a, b) => a>b;
+    const floorHeight = getFloorHeight(sections, scene, obj, f, "no");
+    return originalPos.y - floorHeight;
+}
+
+function getFloorHeight(sections, scene, obj, minFunc, str) {
+    const originalPos = new THREE.Vector3();
+    originalPos.copy(obj.physics.position);
+    originalPos.applyMatrix4(scene.sceneNode.matrixWorld);
     ACTOR_BOX.copy(obj.model.boundingBox);
     ACTOR_BOX.translate(originalPos);
 
@@ -61,14 +72,19 @@ function getDistFromFloor(sections, scene, obj) {
     for (const pos of getPositions(ACTOR_BOX)) {
         const section = findSection(sections, pos);
         const ground = getGround(section, pos);
-        if (ground.height > maxHeight) {
+        if (minFunc(ground.height, maxHeight) || maxHeight == -1) {
             maxHeight = ground.height;
         }
     }
+    if (obj.index == 0 && str=="ok") {
+        console.log("===");
+    console.log(originalPos.y);
+    console.log(maxHeight);
+}
     // If Twinsen is touching the ground we don't need to check if any
     // objects are under him.
-    if (originalPos.y - maxHeight < 0.001) {
-        return originalPos.y - maxHeight;
+    if (originalPos.y - maxHeight <= /*0.001*/ 0.5) {
+        return maxHeight;
     }
 
     // Otherwise, check to see if there are any objects under Twinsen which
@@ -86,15 +102,18 @@ function getDistFromFloor(sections, scene, obj) {
         for (let i = 0; i < section.boundingBoxes.length; i += 1) {
             const bb = section.boundingBoxes[i];
             if (ACTOR_BOX.intersectsBox(bb)) {
-                return originalPos.y - bb.max.y;
+                return bb.max.y;
             }
         }
         POSITION.y -= 0.1;
     }
-
     // No objects were under Twinsen, return distance from the ground.
-    return originalPos.y - maxHeight;
+    return maxHeight;
 }
+
+
+const JETPACK_OFFSET = 0.5;
+const PROTOPACK_OFFSET = 0.2;
 
 function processCollisions(sections, scene, obj, _time) {
     POSITION.copy(obj.physics.position);
@@ -104,14 +123,44 @@ function processCollisions(sections, scene, obj, _time) {
 
     FLAGS.hitObject = false;
     const ground = getGround(section, POSITION);
-    const height = ground.height;
+    let height = ground.height;
 
     let isTouchingGround = true;
     if (obj.physics.position.y > height) {
         isTouchingGround = false;
+    }   
+
+    if (obj.props.entityIndex === BehaviourMode.JETPACK && obj.props.animIndex === AnimType.FORWARD) {
+        const f = (a, b) => a<b;
+        const floorHeight = getFloorHeight(sections, scene, obj, f, "ok");
+        if (floorHeight - obj.physics.position.y < 0.5) {
+             height = floorHeight + JETPACK_OFFSET;
+        }  else {
+            height = obj.physics.position.y;
+        }     
     }
-    obj.props.distFromGround = Math.max(obj.physics.position.y - height, 0);
-    obj.physics.position.y = Math.max(height, obj.physics.position.y);
+    if (obj.props.entityIndex === BehaviourMode.PROTOPACK && obj.props.animIndex === AnimType.FORWARD) {
+        const f = (a, b) => a<b;
+        const floorHeight = getFloorHeight(sections, scene, obj, f, "ok");
+        if (floorHeight - obj.physics.position.y <= 0.5) {
+             height = floorHeight + PROTOPACK_OFFSET;
+        }  else {
+            height = obj.physics.position.y;
+        }
+    }
+    if (obj.props.entityIndex === BehaviourMode.JETPACK && obj.props.animIndex === AnimType.FORWARD) {
+        const diff = height-obj.physics.position.y;
+        if (diff < 0) {
+           // obj.physics.position.y -= 0.1;
+            obj.physics.position.y = Math.max(height, obj.physics.position.y);
+        } else {
+            obj.physics.position.y += 0.1;
+            obj.physics.position.y = Math.min(height, obj.physics.position.y);
+        }
+    } else {
+        obj.physics.position.y = Math.max(height, obj.physics.position.y);
+    }
+    
     POSITION.y = obj.physics.position.y;
 
     if (obj.animState) { // if it's an actor
@@ -134,14 +183,16 @@ function processCollisions(sections, scene, obj, _time) {
                 TGT.add(obj.threeObject.position);
                 TGT.applyMatrix4(scene.sceneNode.matrixWorld);
                 const gInfo = getGroundInfo(section, TGT);
-                if (gInfo && gInfo.collision && isTouchingGround) {
+                if (gInfo && gInfo.collision && (isTouchingGround /*|| obj.props.entityIndex === BehaviourMode.JETPACK*/)) {
                     obj.physics.position.copy(obj.threeObject.position);
                 }
             }
-        }
+        }       
     }
     obj.props.runtimeFlags.isTouchingGround = isTouchingGround;
     obj.props.runtimeFlags.isTouchingFloor = getDistFromFloor(sections, scene, obj) < 0.001;
+    obj.props.distFromGround = Math.max(obj.physics.position.y - height, 0);
+    
     if (isTouchingGround && ground.liquid > 0) {
         obj.props.runtimeFlags.isDrowning = true;
     }

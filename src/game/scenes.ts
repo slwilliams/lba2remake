@@ -105,7 +105,7 @@ export async function createSceneManager(params, game, renderer, hideMenu: Funct
             initSceneDebugData();
             scene.firstFrame = true;
             if (params.editor) {
-                scene.savedState = game.getState().save();
+                scene.savedState = game.getState().save(scene.actors[0]);
             }
             game.loaded(`scene #${index}`, wasPaused);
             return scene;
@@ -489,6 +489,7 @@ function relocateHero(hero, newHero, newScene, teleport) {
     Object.keys(hero.props.runtimeFlags).forEach((k) => {
         newHero.props.runtimeFlags[k] = hero.props.runtimeFlags[k];
     });
+    console.log("here");
     hero.animState = null;
     hero.model = null;
     hero.threeObject = null;
