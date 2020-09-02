@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { DirMode } from '../actors';
 import { AnimType } from '../data/animType';
-import { WORLD_SIZE } from '../../utils/lba';
+import { WORLD_SIZE, distance2D } from '../../utils/lba';
 
 export const BehaviourMode = {
     NORMAL: 0,
@@ -73,7 +73,6 @@ let turnReset = true;
 const BASE_ANGLE = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI);
 const Q = new THREE.Quaternion();
 const EULER = new THREE.Euler();
-
 function processFirstPersonsMovement(game, scene, hero) {
     const controlsState = game.controlsState;
     if (hero.props.runtimeFlags.isClimbing) {
@@ -130,6 +129,10 @@ function processFirstPersonsMovement(game, scene, hero) {
             return;
         }
 
+        if (hero.props.entityIndex === BehaviourMode.AGGRESSIVE) {
+            firstPersonPunching(game, scene);
+        }
+
         animIndex = AnimType.NONE;
         if (Math.abs(controlsState.controlVector.y) > 0.6) {
             hero.props.runtimeFlags.isWalking = true;
@@ -171,6 +174,43 @@ function processFirstPersonsMovement(game, scene, hero) {
     if (hero.props.animIndex !== animIndex) {
         hero.props.animIndex = animIndex;
         hero.resetAnimState();
+    }
+}
+
+// Keep track of who we've punched per hand to ensure the player pulls their
+// hand back before we let them trigger another punch.
+const punched = {};
+const ACTOR_POS = new THREE.Vector3();
+
+// firstPersonPunching checks to see if the player has punched an actor with
+// their fists (VR controller).
+function firstPersonPunching(game, scene) {
+    for (const a of scene.actors) {
+        if (a.index === 0) {
+            continue;
+        }
+
+        ACTOR_POS.copy(a.physics.position);
+        ACTOR_POS.applyMatrix4(scene.sceneNode.matrixWorld);
+
+        const handPositions = game.controlsState.vrControllerPositions;
+        for (let i = 0; i < handPositions.length; i += 1) {
+            const dist = distance2D(ACTOR_POS, handPositions[i]);
+            const isPunched = punched[a.index] && punched[a.index][i];
+
+            if (dist < 0.4 && !isPunched) {
+                a.hit(0, game.getState().hero.handStrength);
+                if (!punched[a.index]) {
+                    punched[a.index] = {};
+                }
+                punched[a.index][i] = true;
+            } else if (dist > 0.5) {
+                if (!punched[a.index]) {
+                    punched[a.index] = {};
+                }
+                punched[a.index][i] = false;
+            }
+        }
     }
 }
 
