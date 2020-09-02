@@ -27,7 +27,7 @@ export function updateHero(game, scene, hero, time) {
     const behaviour = game.getState().hero.behaviour;
     handleBehaviourChanges(scene, hero, behaviour);
     if (game.controlsState.firstPerson) {
-        processFirstPersonsMovement(game, scene, hero, time);
+        processFirstPersonsMovement(game, scene, hero);
     } else {
         processActorMovement(game, scene, hero, time, behaviour);
     }
@@ -58,13 +58,8 @@ function handleBehaviourChanges(scene, hero, behaviour) {
 function validPosition(runtimeFlags) {
     const onFloor = runtimeFlags.isTouchingGround ||
                     runtimeFlags.isTouchingFloor;
-    return onFloor
-        && !runtimeFlags.isDrowning
-        && !runtimeFlags.isDrowningLava
-        && !runtimeFlags.isDrowningStars
-        && !runtimeFlags.isJumping
-        && !runtimeFlags.isFalling
-        && !runtimeFlags.isClimbing;
+    return onFloor && !runtimeFlags.isDrowning && !runtimeFlags.isDrowningLava &&
+    !runtimeFlags.isJumping && !runtimeFlags.isFalling && !runtimeFlags.isClimbing;
 }
 
 function toggleJump(hero, value) {
@@ -78,8 +73,7 @@ let turnReset = true;
 const BASE_ANGLE = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI);
 const Q = new THREE.Quaternion();
 const EULER = new THREE.Euler();
-
-function processFirstPersonsMovement(game, scene, hero, time) {
+function processFirstPersonsMovement(game, scene, hero) {
     const controlsState = game.controlsState;
     if (hero.props.runtimeFlags.isClimbing) {
         return;
@@ -114,8 +108,29 @@ function processFirstPersonsMovement(game, scene, hero, time) {
             hero.setAnim(AnimType.FALLING);
             return;
         }
-        if (checkDrowningAnim(game, scene, hero, time)) {
+        if (hero.props.runtimeFlags.isDrowning) {
+            hero.setAnimWithCallback(AnimType.DROWNING, () => {
+                game.getState().load(scene.savedState, hero);
+                hero.setAnim(AnimType.NONE);
+                hero.props.runtimeFlags.isDrowning = false;
+                hero.props.noInterpolateNext = true;
+            });
+            hero.animState.noInterpolate = true;
             return;
+        }
+        if (hero.props.runtimeFlags.isDrowningLava) {
+            hero.setAnimWithCallback(AnimType.DROWNING_LAVA, () => {
+                game.getState().load(scene.savedState, hero);
+                hero.setAnim(AnimType.NONE);
+                hero.props.runtimeFlags.isDrowningLava = false;
+                hero.props.noInterpolateNext = true;
+            });
+            hero.animState.noInterpolate = true;
+            return;
+        }
+
+        if (hero.props.entityIndex === BehaviourMode.AGGRESSIVE) {
+            firstPersonPunching(game, scene);
         }
 
         animIndex = AnimType.NONE;
@@ -162,6 +177,39 @@ function processFirstPersonsMovement(game, scene, hero, time) {
     }
 }
 
+// Keep track of who we've punched per hand to ensure the player pulls their
+// hand back before we let them trigger another punch.
+const punched = {};
+const ACTOR_BOX = new THREE.Box3();
+
+// firstPersonPunching checks to see if the player has punched an actor with
+// their fists (VR controller).
+function firstPersonPunching(game, scene) {
+    for (const a of scene.actors) {
+        if (a.index === 0 || !a.model) {
+            continue;
+        }
+
+        if (!punched[a.index]) {
+            punched[a.index] = {};
+        }
+
+        ACTOR_BOX.copy(a.model.boundingBox);
+        ACTOR_BOX.translate(a.physics.position);
+        ACTOR_BOX.applyMatrix4(scene.sceneNode.matrixWorld);
+        const handPositions = game.controlsState.vrControllerPositions;
+        for (let i = 0; i < handPositions.length; i += 1) {
+            const intersect = ACTOR_BOX.containsPoint(handPositions[i]);
+            if (intersect && !punched[a.index][i]) {
+                a.hit(0, game.getState().hero.handStrength);
+                punched[a.index][i] = true;
+            } else if (!intersect) {
+                punched[a.index][i] = false;
+            }
+        }
+    }
+}
+
 // From this height Twinsen dies.
 const BIG_FALL_HEIGHT = 3;
 // From this height Twinsen hits his head on the floor.
@@ -176,9 +224,7 @@ function processFall(scene, hero) {
     }
     if (distFromFloor < 0.001) {
         // If we've jumped into water, don't play the landing animation.
-        if (hero.props.runtimeFlags.isDrowning
-            || hero.props.runtimeFlags.isDrowningLava
-            || hero.props.runtimeFlags.isDrowningStars) {
+        if (hero.props.runtimeFlags.isDrowning || hero.props.runtimeFlags.isDrowningLava) {
             hero.props.runtimeFlags.isFalling = false;
             hero.props.fallDistance = 0;
             return;
@@ -249,7 +295,24 @@ function processActorMovement(game, scene, hero, time, behaviour) {
             hero.setAnim(AnimType.FALLING);
             return;
         }
-        if (checkDrowningAnim(game, scene, hero, time)) {
+        if (hero.props.runtimeFlags.isDrowning) {
+            hero.setAnimWithCallback(AnimType.DROWNING, () => {
+                game.getState().load(scene.savedState, hero);
+                hero.setAnim(AnimType.NONE);
+                hero.props.runtimeFlags.isDrowning = false;
+                hero.props.noInterpolateNext = true;
+            });
+            hero.animState.noInterpolate = true;
+            return;
+        }
+        if (hero.props.runtimeFlags.isDrowningLava) {
+            hero.setAnimWithCallback(AnimType.DROWNING_LAVA, () => {
+                game.getState().load(scene.savedState, hero);
+                hero.setAnim(AnimType.NONE);
+                hero.props.runtimeFlags.isDrowningLava = false;
+                hero.props.noInterpolateNext = true;
+            });
+            hero.animState.noInterpolate = true;
             return;
         }
 
@@ -359,51 +422,6 @@ function processActorMovement(game, scene, hero, time, behaviour) {
         hero.animState.noInterpolate = true;
         hero.props.noInterpolateNext = false;
     }
-}
-
-function checkDrowningAnim(game, scene, hero, time) {
-    if (!hero.props.runtimeFlags.isDrowning &&
-        !hero.props.runtimeFlags.isDrowningLava &&
-        !hero.props.runtimeFlags.isDrowningStars) {
-      return false;
-    }
-
-    let anim = AnimType.DROWNING;
-    if (hero.props.runtimeFlags.isDrowningLava) {
-        anim = AnimType.DROWNING_LAVA;
-    } else if (hero.props.runtimeFlags.isDrowningStars) {
-        if (game.controlsState.firstPerson) {
-            hero.setAnim(AnimType.FALLING);
-            if (hero.physics.position.y < 0) {
-                const fallSpeed = hero.physics.position.y * 0.18 - 1;
-                hero.physics.position.y += fallSpeed * 0.25 * WORLD_SIZE * time.delta;
-            } else {
-                hero.physics.position.y -= 0.25 * WORLD_SIZE * time.delta;
-            }
-            if (hero.physics.position.y < -180) {
-                game.getState().load(scene.savedState, hero);
-                hero.setAnim(AnimType.NONE);
-                hero.props.flags.hasCollisions = true;
-                hero.props.runtimeFlags.isDrowning = false;
-                hero.props.runtimeFlags.isDrowningLava = false;
-                hero.props.runtimeFlags.isDrowningStars = false;
-            } else {
-                hero.props.flags.hasCollisions = false;
-            }
-            return true;
-        }
-        anim = AnimType.DROWNING_STARS;
-    }
-    hero.setAnimWithCallback(anim, () => {
-        game.getState().load(scene.savedState, hero);
-        hero.setAnim(AnimType.NONE);
-        hero.props.runtimeFlags.isDrowning = false;
-        hero.props.runtimeFlags.isDrowningLava = false;
-        hero.props.runtimeFlags.isDrowningStars = false;
-        hero.props.noInterpolateNext = true;
-    });
-    hero.animState.noInterpolate = true;
-    return true;
 }
 
 function onlyY(src) {
